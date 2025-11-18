@@ -1,0 +1,74 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/business_card
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "userpictureurl": "http://localhost:58000/message/index.php?id=980",
+        "username": "teacher1 teacher1",
+        "userprofileurl": "http://localhost:8010/user/profile.php?id=980",
+        "userdescription": "Teacher1 Teacher1 is a software engineer at Example Co.",
+        "description": "This is a description of the event.",
+        "duration": "2 hours",
+        "points": 5
+    }
+
+}}
+
+{{#username}}
+<div class='container mb-3' id='booking-business-card'>
+    <div class='row'>
+        <div class='col-1'>
+            <img src="{{userpictureurl}}" alt="{{username}}" class='userpicture' style="max-width:100%;">
+        </div>
+        <div class='col-11'>
+            <p class="bold">
+                {{#str}} organizatorname, mod_booking {{/str}}<br>
+            </p>
+            <p>
+                <b><a href='{{userprofileurl}}' aria-label='{{username}}'>{{username}}</a></b><br>
+                {{{userdescription}}}
+            </p>
+        </div>
+    </div>
+</div>
+{{/username}}
+{{#description}}
+    <div>
+        <p>{{{description}}}</p>
+    </div>
+{{/description}}
+{{#duration}}
+    <div>
+        <p><b>{{#str}} eventduration, mod_booking {{/str}}:</b> {{{duration}}}</p>
+    </div>
+{{/duration}}
+{{#points}}
+    <div>
+        <p><b>{{#str}} eventpoints, mod_booking {{/str}}:</b> {{{points}}}</p>
+    </div>
+{{/points}}
+{{#errormessage}}
+<div class="alert alert-warning">{{.}}</div>
+{{/errormessage}}

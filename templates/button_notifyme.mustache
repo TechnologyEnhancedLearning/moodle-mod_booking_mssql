@@ -1,0 +1,77 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/button_notifyme
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+
+    {
+        "onlist": true,
+        "userid": 1212,
+        "itemid": 12,
+        "area": "option"
+    }
+}}
+<div class="w-100 d-flex justify-content-center booking-button-area"
+    data-itemid="{{itemid}}"
+    data-area="{{area}}"
+
+    {{#dataaction}}data-action="{{dataaction}}"{{/dataaction}} >
+
+     {{#price}}
+        <div class="pricecontainer mb-2 {{#fullwidth}}w-100{{/fullwidth}}">
+            <span class="pricecurrency h5">
+                {{price}} {{currency}}
+            </span>
+                <div>
+                    <a class="booking-button-notify-me h3 text-center"
+                        data-userid="{{userid}}"
+                        data-itemid="{{itemid}}"
+                        data-area="{{area}}"
+                        data-toggle="tooltip"
+                        data-placement="top"
+                        title="{{#str}} notifyme, mod_booking {{/str}}">
+                        <i class="{{^onlist}}fa fa-bell-o{{/onlist}}{{#onlist}}fa fa-bell{{/onlist}}" aria-hidden="true"></i>
+                    </a>
+                </div>
+        </div>
+     {{/price}}
+     {{^price}}
+        <a class="booking-button-notify-me h3 text-center"
+            data-userid="{{userid}}"
+            data-itemid="{{itemid}}"
+            data-area="{{area}}"
+            data-toggle="tooltip"
+            data-placement="top"
+            title="{{#str}} notifyme, mod_booking {{/str}}">
+            <i class="{{^onlist}}fa fa-bell-o{{/onlist}}{{#onlist}}fa fa-bell{{/onlist}}" aria-hidden="true"></i>
+        </a>
+     {{/price}}
+</div>
+
+
+{{#js}}
+    require(['mod_booking/button_notifyme'], function(init) {
+        init.init();
+    });
+{{/js}}

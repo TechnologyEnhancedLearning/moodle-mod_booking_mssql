@@ -1,0 +1,111 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_changes
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "changes": [
+            {
+                "info":  "This is some general information about the changes.",
+                "fieldname": "Custom Field 1",
+                "oldname": "Old Custom Field Name",
+                "newname": "New Custom Field Name",
+                "oldvalue": "Old Custom Field Value",
+                "newvalue": "New Custom Field Value"
+            }
+        ]
+    }
+}}
+
+<table style="border:none">
+    {{#changes}}
+        {{#info}}
+        <tr>
+            <td colspan="3"><i>{{{.}}}</i></td>
+        </tr>
+        {{/info}}
+        {{#fieldname}}
+        <tr>
+            <td><b>{{.}}: </b></td>
+            <td>
+                <div class="changed-old-value">
+                    {{#oldvalue}}
+                        <div>
+                            {{#str}} changeold, mod_booking {{/str}}
+                            <s>{{{.}}}</s>
+                        </div>
+                    {{/oldvalue}}
+                </div>
+                <div>
+                    {{#newvalue}}
+                        <div class="changed-new-value">
+                            {{#str}} changenew, mod_booking {{/str}}
+                            {{{.}}}
+                        </div>
+                    {{/newvalue}}
+                </div>
+            </td>
+            <td></td>
+        </tr>
+        {{/fieldname}}
+        <!-- Custom fields have no field name. -->
+        {{^fieldname}}
+        <tr>
+            <td>
+                <b>
+                    {{#newname}}
+                        {{#str}} changenew, mod_booking {{/str}}
+                        {{.}}
+                    {{/newname}}
+                    {{#oldname}}
+                        <div class="changed-old-value">
+                            {{#str}} changeold, mod_booking {{/str}}
+                            <s>{{.}}</s>
+                        </div>
+                    {{/oldname}}
+                </b>
+            </td>
+            <td>
+                <div>
+                    {{#oldvalue}}
+                        <div class="changed-old-value">
+                            {{#str}} changeold, mod_booking {{/str}}
+                            <s>{{{.}}}</s>
+                        </div>
+                    {{/oldvalue}}
+                </div>
+                <div>
+                    {{#newvalue}}
+                        <div class="changed-new-value">
+                            {{#str}} changenew, mod_booking {{/str}}
+                            {{{.}}}
+                        </div>
+                    {{/newvalue}}
+                </div>
+            </td>
+            <td></td>
+        </tr>
+        {{/fieldname}}
+    {{/changes}}
+</table>

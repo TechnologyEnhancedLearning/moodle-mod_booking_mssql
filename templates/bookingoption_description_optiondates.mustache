@@ -1,0 +1,56 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_description_optiondates
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "dates": [
+            {
+                "datestring": "2023-06-01 09:00:00 - 11:00:00",
+                "customfields": [
+                    {
+                        "name" : "custom field name",
+                        "value" : "custom field value"
+                    }
+                ]
+            }
+        ]
+    }
+}}
+<div {{^dates}} style="display:none"{{/dates}}>
+    <b>{{#str}} sessions, mod_booking {{/str}}:</b>
+    <ul>
+        {{#dates}}
+            <li>{{{datestring}}}
+                {{#customfields.0}}
+                    {{#customfields}}
+                        <div>
+                            {{name}}{{{value}}}
+                        </div>
+                    {{/customfields}}
+                {{/customfields.0}}
+            </li>
+        {{/dates}}
+    </ul>
+</div>

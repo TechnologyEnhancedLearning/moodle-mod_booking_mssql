@@ -1,0 +1,40 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_dates_custom_hidden_inputs
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "dates": [
+            {
+                "dateid": "dateid-0",
+                "starttimestamp": "1678120200",
+                "endtimestamp": "1687797900",
+                "string": "Monday, 6 March 2023, 4:30 PM - Monday, 26 June 2023, 5:45 PM"
+            }
+        ]
+    }
+}}
+{{#dates}}
+<input id="{{dateid}}" type="text" name="coursetime-{{dateid}}" data-fieldtype="text" value="{{starttimestamp}}-{{endtimestamp}}" class="d-none felement">
+{{/dates}}

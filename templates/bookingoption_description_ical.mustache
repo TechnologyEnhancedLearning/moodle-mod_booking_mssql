@@ -1,0 +1,76 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_description_ical
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "location" : "location",
+        "institution" : "institution",
+        "address" : "address",
+        "statusdescription" : "statusdescription",
+        "description" : "description",
+        "booknowbutton" : "HTML booknowbutton",
+        "teachers": [
+            "Maxima Yoga",
+            "Teacher 1"
+        ],
+        "dates": [
+            {
+                "datestring": "datestring",
+                "customfields": [
+                    {
+                        "name" : "custom field name",
+                        "value" : "custom field value"
+                    }
+                ]
+            }
+        ]
+    }
+}}
+
+{{{title}}}
+
+{{#dates}}
+- {{{datestring}}}
+{{#customfields}}
+    * {{name}}{{{value}}}
+{{/customfields}}
+<!--The line breaks are intentional.-->
+{{/dates}}
+{{#location}}{{.}}
+{{/location}}{{#institution}}{{#str}}institution, mod_booking{{/str}}: {{.}}
+{{/institution}}{{#address}}{{#str}}address, mod_booking{{/str}}:  {{.}}
+{{/address}}{{#statusdescription}}{{{.}}}
+{{/statusdescription}}
+{{#description}}
+
+{{{.}}}
+
+{{/description}}
+<br>
+{{> mod_booking/bookingoption_description_teachers }}
+{{#booknowbutton}}
+
+{{{.}}}
+{{/booknowbutton}}

@@ -1,0 +1,97 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_description_cartitem
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "description": "Booking option description",
+        "location" : "location",
+        "institution" : "institution",
+        "address" : "address",
+        "statusdescription" : "statusdescription",
+        "booknowbutton": "booknow button HTML",
+        "showteacherslabel": true,
+        "showdateslabel": true,
+        "price": "79.00",
+        "priceformulaadd": "0.00",
+        "priceformulamultiply": "1.00",
+        "currency": "EUR",
+        "pricecategoryname": "Price",
+        "teachers": [
+            "Maxima Yoga",
+            "Teacher 1"
+        ],
+        "dates": [
+            {
+                "datestring": "datestring",
+                "customfields": [
+                    {
+                        "name" : "custom field name",
+                        "value" : "custom field value"
+                    }
+                ]
+            }
+        ]
+    }
+}}
+
+
+{{#dayofweektime}}<div class="bo_dayofweektime">{{#str}}dayofweektime, mod_booking{{/str}}: {{.}}</div>{{/dayofweektime}}
+
+<a class="collapse-description" data-toggle="collapse" href="#collapsedescription_{{modalcounter}}" role="button" aria-expanded="false" aria-controls="collapsedescription_{{modalcounter}}">
+    {{#str}} showdescription, mod_booking {{/str}}
+</a>
+
+<div class="collapse" id="collapsedescription_{{modalcounter}}">
+    <div class="card card-body">
+        {{#location}}<div class="bo_location">{{#str}}location, mod_booking{{/str}}: {{{.}}}</div>{{/location}}
+        {{#institution}}<div class="bo_institution">{{#str}}institution, mod_booking{{/str}}: {{.}}</div>{{/institution}}
+        {{#address}}<div class="bo_address">{{#str}}address, mod_booking{{/str}}:  {{.}}</div>{{/address}}
+        {{#statusdescription}}<div class="bo_statusdescription"><p>{{{.}}}</p></div>{{/statusdescription}}
+        {{#description}}<div class="bo_description"><p>{{{.}}}</p></div>{{/description}}
+        {{#price}}<div class="bo_price">{{.}} {{currency}} {{pricecategoryname}}</div>{{/price}}
+        {{> mod_booking/bookingoption_description_teachers }}
+        <a class="collapseoptiondatesbutton" data-toggle="collapse" href="#collapseoptiondates_{{modalcounter}}" role="button" aria-expanded="false" aria-controls="collapseoptiondates_{{modalcounter}}">
+            {{#str}} showdates, mod_booking {{/str}}
+        </a>
+        <div id="collapseoptiondates_{{modalcounter}}" class="collapse list-group-item">
+            <div class="list-group">
+                {{#dates}}
+                    <div class="list-group-item">
+                        <div>
+                            <b>{{{datestring}}}</b>
+                        </div>
+                        <div {{^customfields}}style="display:none"{{/customfields}}>
+                            {{#customfields}}
+                                <div>
+                                    {{name}}{{{value}}}
+                                </div>
+                            {{/customfields}}
+                        </div>
+                    </div>
+                {{/dates}}
+            </div>
+         </div>
+    </div>
+</div>

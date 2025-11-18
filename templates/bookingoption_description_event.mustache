@@ -1,0 +1,77 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_booking/bookingoption_description_event
+
+    Classes required for JS:
+    * none
+
+    Data attributes required for JS:
+    * data-region
+
+    Example context (json):
+    {
+        "title" : "My title",
+        "description": "Booking option description",
+        "location" : "location",
+        "institution" : "institution",
+        "address" : "address",
+        "statusdescription" : "statusdescription",
+        "booknowbutton": "booknow button HTML",
+        "showteacherslabel": true,
+        "showdateslabel": true,
+        "teachers": [
+            "Maxima Yoga",
+            "Teacher 1"
+        ],
+        "dates": [
+            {
+                "datestring": "2023-06-01 10:00 AM - 12:00 PM",
+                "customfields": [
+                    {
+                        "name" : "custom field name",
+                        "value" : "custom field value"
+                    }
+                ]
+            }
+        ]
+    }
+}}
+{{#booknowbutton}}
+    <div class="float-right">
+        <div>
+            {{{.}}}
+        </div>
+    </div>
+{{/booknowbutton}}
+<h4>{{{title}}}</h4>
+{{#description}}<div class="bo_description">{{{.}}}</div>{{/description}}
+{{#location}}<div class="bo_location">{{#str}}location, mod_booking{{/str}}: {{{.}}}</div>{{/location}}
+{{#institution}}<div class="bo_institution">{{#str}}institution, mod_booking{{/str}}: {{.}}</div>{{/institution}}
+{{#address}}<div class="bo_address">{{#str}}address, mod_booking{{/str}}:  {{.}}</div>{{/address}}
+{{#statusdescription}}<div class="bo_statusdescription"><p>{{{.}}}</p></div>{{/statusdescription}}
+{{#showteacherslabel}}<br>{{#str}}teachers, mod_booking{{/str}}:<br>{{/showteacherslabel}}
+        {{#teachers}}
+* {{firstname}} {{lastname}} <br>
+        {{/teachers}}
+{{#showdateslabel}}<br>{{#str}}optiondatestime, mod_booking{{/str}}:<br>{{/showdateslabel}}
+{{#dates}}
+* {{{datestring}}} <br>
+{{#customfields}}
+     {{name}}{{{value}}} <br>
+{{/customfields}}
+{{/dates}}

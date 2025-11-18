@@ -1,0 +1,596 @@
+.mod-booking .results {
+    border-collapse: separate;
+}
+
+.mod-booking .results .data {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #999;
+}
+
+.mod-booking-inlinetable {
+    display: inline;
+    background-color: transparent;
+    /*float: left;*/
+}
+
+tr.mod-booking-booked td.cell {
+    background-color: lightgreen;
+}
+
+tr.mod-booking-booked.inpast td.cell {
+    background-color: #d6f9d9;
+}
+
+table.mod-booking-table td.cell {
+    border-bottom: 1px solid #cecece;
+}
+
+table.mod-booking-table tr.inpast td.cell {
+    color: #909090;
+}
+
+div.mod-booking-waitlist {
+    background-color: orange;
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+tr.mod-booking-watinglist td.cell {
+    background-color: orange;
+}
+
+tr.mod-booking-invisible {
+    visibility: hidden;
+    height: 0;
+    display: none;
+}
+
+/** Styles for subscriber tables on subscribeusers.php (book other users) */
+.subscriberdiv,
+.subscribertable {
+    width: 100%;
+    vertical-align: top;
+}
+
+.subscribertable tr td {
+    vertical-align: top;
+}
+
+.subscribertable tr td.actions {
+    width: 16%;
+    padding-top: 3em;
+}
+
+.subscribertable tr td.actions .actionbutton {
+    margin: 0.3em 0;
+    padding: 0.5em 0;
+    width: 100%;
+}
+
+.subscribertable tr td.existing,
+.subscribertable tr td.potential {
+    width: 42%;
+}
+
+/** styles for displaying all bookings */
+.mod-booking-regular {
+    display: table-cell;
+    padding: 5px;
+}
+
+.mod-booking-waiting {
+    display: table-cell;
+    padding: 5px;
+}
+
+.br-theme-css-stars .br-widget {
+    height: 28px;
+    white-space: nowrap;
+}
+
+.br-theme-css-stars .br-widget a {
+    text-decoration: none;
+    height: 18px;
+    width: 18px;
+    float: left;
+    font-size: 23px;
+    margin-right: 5px;
+}
+
+.br-theme-css-stars .br-widget a:after {
+    content: "\2605";
+    color: #d2d2d2;
+}
+
+.br-theme-css-stars .br-widget a.br-active:after {
+    color: #edb867;
+}
+
+.br-theme-css-stars .br-widget a.br-selected:after {
+    color: #edb867;
+}
+
+.br-theme-css-stars .br-widget .br-current-rating {
+    display: none;
+}
+
+.br-theme-css-stars .br-readonly a {
+    cursor: default;
+}
+
+#booking-instance-description {
+    margin-left: 10px;
+}
+
+#booking-business-card {
+    margin-left: 10px;
+    padding: 10px;
+    border-radius: 15px;
+    border: 1px dashed lightgray;
+}
+
+.sports-badge {
+    font-size: small;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-radius: 15px;
+}
+
+.path-mod-booking .badge {
+    position: unset;
+}
+
+.reoccurringdates {
+    list-style-type: none;
+}
+
+.datepills {
+    border-radius: 10px;
+    font-family: "Lucida Console", monospace;
+}
+
+.icon-red {
+    color: red;
+}
+
+.wunderbyte-table-grid .course-card-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 30px;
+}
+
+.course-content .activity-altcontent .wunderbyte-table-grid ul.infolist,
+.wunderbyte-table-grid ul.infolist,
+.course-content li.section li.activity ul ul.infolist {
+    list-style: none;
+}
+
+.wunderbyte-table-grid ul.infolist {
+    padding: 0;
+    margin: 0;
+}
+
+.wunderbyte-table-grid .infolist .fa {
+    width: 15px;
+    text-align: center;
+}
+
+.wunderbyte-table-grid .list-group-item {
+    border: 1px solid rgba(0, 0, 0, .125);
+}
+
+/* Semesters form */
+#page-admin-mod-booking-semesters #semestersform {
+    padding-top: 1rem;
+}
+
+input[name^='deletesemester'] {
+    color: #ca3120;
+    background-color: #fff;
+    border-color: #ca3120;
+    padding: 0.25rem 0.5rem;
+    font-size: .8203125rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+input[name^='deletesemester']:hover {
+    color: #fff;
+    background-color: #ca3120;
+    border-color: #ca3120;
+    padding: 0.25rem 0.5rem;
+    font-size: .8203125rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+input[name^='addsemester']:hover {
+    color: #357a32;
+    background-color: #fff;
+    border-color: #357a32;
+}
+
+input[name^='addsemester'] {
+    color: #fff;
+    background-color: #357a32;
+    border-color: #357a32;
+}
+
+/* Holidays form */
+#page-admin-mod-booking-semesters #holidaysform {
+    padding-top: 1rem;
+}
+
+input[name^='deleteholiday'] {
+    color: #ca3120;
+    background-color: #fff;
+    border-color: #ca3120;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 1rem;
+    font-size: .8rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+input[name^='deleteholiday']:hover {
+    color: #fff;
+    background-color: #ca3120;
+    border-color: #ca3120;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 1rem;
+    font-size: .8rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+input[name^='addholiday']:hover {
+    color: #357a32;
+    background-color: #fff;
+    border-color: #357a32;
+}
+
+input[name^='addholiday'] {
+    color: #fff;
+    background-color: #357a32;
+    border-color: #357a32;
+}
+
+#page-admin-mod-booking-semesters #holidaysform .form-check label {
+    margin-bottom: 0;
+}
+
+/* Fix a bug where menu was disappearing behind the top of the table
+if there only was one booking option. */
+#page-mod-booking-view #region-main div.no-overflow {
+    overflow: visible;
+}
+
+.booking-option-info-invisible {
+    display: inline-block;
+    color: #999;
+    padding-top: 3px;
+}
+
+#page-mod-booking-optiondates_teachers_report .modal-body {
+    overflow-y: visible;
+}
+
+#page-mod-booking-optiondates_teachers_report .modal-content {
+    overflow: visible;
+}
+
+/* Booking rules. */
+#page-mod-booking-edit-rules .booking-rules-cards {
+    padding-top: 15px;
+}
+.booking-rules-list .ruleinactive {
+    color: gray; /* Sets the text color to gray */
+}
+
+/* Subbooking Timeslot */
+.mod-booking-timeslotbooking [data-bookable="1"] {
+    background: var(--info);
+    color: #fff;
+    vertical-align: middle;
+    cursor: pointer;
+    border: 1px solid #fff;
+    padding: 1px;
+}
+.mod-booking-timeslotbooking [data-selected] {
+    background: var(--success);
+    color: #fff;
+    cursor: pointer;
+}
+.mod-booking-timeslotbooking .table td,
+.mod-booking-timeslotbooking .table tr {
+    text-align: center;
+    vertical-align: middle;
+}
+.mod-booking-timeslotbooking th {
+    border: 1px solid #fff;
+    vertical-align: middle;
+}
+.mod-booking-timeslotbooking .name {
+    font-weight: 700;
+}
+
+.wb_shopping_cart {
+    width: 100%;
+    height: 100%;
+}
+
+.wb_shopping_cart.disabled {
+    background: var(--success);
+    color: white;
+}
+
+.wb_shopping_cart.disabled {
+    background: var(--success);
+    color: white;
+}
+
+.wb_shopping_cart[data-bookable="false"] {
+    background: var(--warning);
+}
+
+#page-mod-booking-optiondates .dropdown-menu,
+#page-mod-booking-edit_optiontemplate .dropdown-menu,
+#page-mod-booking-optiontemplatessettings .dropdown-menu,
+#page-mod-booking-teachers_instance_report .dropdown-menu,
+#page-mod-booking-recalculateprices .dropdown-menu,
+#page-mod-booking-customreporttemplatesadd .dropdown-menu,
+#page-mod-booking-customreporttemplates .dropdown-menu,
+#page-mod-booking-mod .dropdown-menu,
+#page-mod-booking-view .dropdown-menu,
+#page-mod-booking-instancetemplateadd .dropdown-menu,
+#page-mod-booking-importoptions .dropdown-menu,
+#page-mod-booking-tagtemplates .dropdown-menu,
+#page-mod-booking-importexcel .dropdown-menu,
+#page-mod-booking-report .dropdown-menu,
+#page-mod-booking-subscribeusers .dropdown-menu,
+#page-mod-booking-viewconfirmation .dropdown-menu,
+#page-mod-booking-editoptions .dropdown-menu {
+    width: max-content;
+}
+
+#page-mod-booking-report #studentsform table {
+    margin-bottom: 15px;
+}
+
+.prepage-booking-page {
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+#prepage-booking-tabs {
+    counter-reset: section;
+}
+
+#prepage-booking-tabs li {
+    color: lightgray;
+    list-style-type: none;
+    font-size: 15px;
+    width: 25%;
+    float: left;
+    position: relative;
+    font-weight: bold;
+}
+
+#prepage-booking-tabs li.active {
+    color: #357a32; /* Bootstrap success color.*/
+}
+
+/* Icon prepage progress tabs before any progress */
+#prepage-booking-tabs li:before {
+    width: 34px;
+    display: inline-table;
+    font-size: 20px;
+    color: #fff;
+    background: lightgray;
+    border-radius: 50%;
+    margin: 7px 7px;
+    text-align: center;
+    padding: 2px;
+    font-family: Helvetica, sans-serif, Arial;
+    font-weight: bolder;
+    counter-increment: section;
+    content: counter(section);
+}
+
+/* Prepage progress tabs connectors */
+#prepage-booking-tabs li:after {
+    content: 'asdf';
+    width: 100%;
+    height: 2px;
+    background: lightgray;
+    position: absolute;
+    left: 0;
+    top: 25px;
+    z-index: -1;
+}
+
+/* Color number of the step and the connector before it */
+#prepage-booking-tabs li.active:before,
+#prepage-booking-tabs li.active:after {
+    background: #357a32; /* Bootstrap success color.*/
+    margin: 7px 7px;
+    text-align: center;
+}
+
+#page-mod-booking-optionview ul.infolist {
+    padding-inline-start: 10px;
+}
+
+#page-mod-booking-editoptions .editoption-youareediting-alert {
+    position: sticky;
+    top: 5px;
+    z-index: 999;
+    width: 70%;
+}
+
+#page-mod-booking-view .wunderbyte-table-list .action {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+/* DO NOT USE #page-mod-booking-view because this needs to work in shortcodes too! */
+.mod-booking-view-card-image {
+    height: 220px;
+    object-fit: cover;
+}
+
+/* DO NOT USE #page-mod-booking-view because this needs to work in shortcodes too! */
+.mod-booking-view-list-image {
+    width: inherit;
+    height: 100%;
+    object-fit: cover;
+    max-height: 300px;
+    border-radius: 0;
+}
+
+.mod-booking-view-list-image-half {
+    width: inherit;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+/* DO NOT USE #page-mod-booking-view because this needs to work in shortcodes too! */
+.mod-booking-view-list-image.rounded-left {
+    box-shadow: 3px 0 10px 1px rgba(0, 0, 0, 0.1);
+    /* stylelint-disable-next-line declaration-no-important */
+    border-top-right-radius: 0 !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    border-bottom-right-radius: 0 !important;
+}
+
+/* DO NOT USE #page-mod-booking-view because this needs to work in shortcodes too! */
+.mod-booking-view-list-image.rounded-right {
+    box-shadow: -3px 0 10px 1px rgba(0, 0, 0, 0.1);
+    /* stylelint-disable-next-line declaration-no-important */
+    border-top-left-radius: 0 !important;
+    /* stylelint-disable-next-line declaration-no-important */
+    border-bottom-left-radius: 0 !important;
+}
+
+#page-mod-booking-editoptions div[id^='fgroup_id_buttonar_'] {
+    position: sticky;
+    bottom: 5px;
+}
+
+#page-mod-booking-editoptions div[id^='fgroup_id_buttonar_'] input[name='submitbutton'],
+#page-mod-booking-editoptions div[id^='fgroup_id_buttonar_'] input[name='cancel'] {
+    box-shadow: rgba(14, 30, 37, 0.12) 0 2px 4px 0, rgba(14, 30, 37, 0.32) 0 2px 16px 0;
+}
+
+#page-mod-booking-mod #fgroup_id_buttonar {
+    position: sticky;
+    bottom: 5px;
+}
+
+#page-mod-booking-mod #fgroup_id_buttonar  input[name='submitbutton'],
+#page-mod-booking-mod #fgroup_id_buttonar  input[name='submitbutton2'],
+#page-mod-booking-mod #fgroup_id_buttonar  input[name='cancel'] {
+    box-shadow: rgba(14, 30, 37, 0.12) 0 2px 4px 0, rgba(14, 30, 37, 0.32) 0 2px 16px 0;
+}
+
+.bookinglinkbutton:not(#page-mod-booking-optionview .bookinglinkbutton) {
+    background: var(--primary);
+    border-radius: 8px;
+    color: white;
+    text-decoration: none;
+}
+
+#page-mod-booking-editoptions .changed-old-value {
+    color: red;
+}
+
+/* Make sure that spans within this container don't break.
+We need this for teachers for example. */
+.flex-wrap-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.flex-wrap-element {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+/* Styles for new report.php */
+#accordion-usertables .columnclass.option {
+    max-width: 100px;
+}
+
+/* Styles for new report.php */
+#accordion-usertables .card-header {
+    background: linear-gradient(to bottom, #f0f0f0, #fff);
+    border-bottom: 0;
+}
+
+.disabled-profeature {
+    color: grey;
+    pointer-events: none; /* Disables clicks */
+    opacity: 0.6; /* Makes it appear lighter */
+    cursor: not-allowed; /* Shows a not-allowed cursor */
+}
+.disabled-profeature a {
+    color: grey; /* Also greys out the link */
+    text-decoration: none; /* Optional: Remove underline if it's styled */
+}
+.disabled-profeature a:hover {
+    color: grey; /* Ensures hover doesn’t change color */
+}
+
+.bookingoption-edit-button {
+    text-decoration: none;
+}
+
+/* GH-936 Better distinction between availabilities. */
+div.checkbox:has(label[for^="id_bo_cond_allowedtobookininstance_capabilitynotneeded"]) {
+    left: 20px;
+}
+
+/* Bookings Tracker (report2) */
+.bookingstracker-header {
+    font-weight: bold;
+    font-size: large;
+    margin: 10px 0;
+    color: #0f6cbf;
+}
+
+#page-mod-booking-report2 div[class^='wunderbyte_table_container_'] {
+    /* stylelint-disable-next-line declaration-no-important */
+    margin: 0 !important;
+}
+
+#page-mod-booking-report2 .pagination {
+    font-size: calc(0.9rem + 0.045vw);
+    margin-left: 20px;
+}
+
+#page-mod-booking-report2 .pagination {
+    font-size: calc(0.9rem + 0.045vw);
+    margin-left: 20px;
+}
+
+.report2-nav-divider {
+    margin-left: 3px;
+    margin-right: 3px;
+    font-size: x-large;
+}
+
+#page-mod-booking-report2 #accordion-usertables .sortcolumn {
+    background-color: transparent;
+}
+
+/* Booking config settings. */
+#page-admin-setting-modsettingbooking #admin-selectteacherswithprofilefieldonlyfield,
+#page-admin-setting-modsettingbooking #admin-selectteacherswithprofilefieldonlyvalue {
+    margin-left: 75px;
+}
