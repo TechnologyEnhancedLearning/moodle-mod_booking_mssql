@@ -1368,6 +1368,11 @@ class bo_info {
             case 'mysql':
                 // MySQL: Extract key from JSON array element at specified index.
                 return "JSON_UNQUOTE(JSON_EXTRACT($dbcolumn, '$[$index]." . addslashes($jsonkey) . "'))";
+            case 'mssql':
+            case 'sqlsrv':
+                // MSSQL / SQL Server: Use JSON_VALUE with array index path.
+                // Example: JSON_VALUE(column, '$[0].key')
+                return "JSON_VALUE($dbcolumn, '$[$index]." . addslashes($jsonkey) . "')";
             default:
                 throw new \moodle_exception('Unsupported database type for JSON key extraction.');
         }
@@ -1401,6 +1406,20 @@ class bo_info {
                     return "CAST(JSON_EXTRACT($dbcolumn, '$." . addslashes($jsonkey) . "') AS UNSIGNED)";
                 } else {
                     return "CAST(JSON_EXTRACT($dbcolumn, '$." . addslashes($jsonkey) . "') AS CHAR)";
+                }
+
+            case 'mssql':
+            case 'sqlsrv':
+                // MSSQL / SQL Server: Use JSON_VALUE for scalar extraction.
+                // Map common types to SQL Server types.
+                $lt = strtolower($type);
+                if (in_array($lt, ['int', 'integer', 'bigint'], true)) {
+                    return "CAST(JSON_VALUE($dbcolumn, '$." . addslashes($jsonkey) . "') AS INT)";
+                } elseif (in_array($lt, ['float', 'double', 'decimal'], true)) {
+                    return "CAST(JSON_VALUE($dbcolumn, '$." . addslashes($jsonkey) . "') AS FLOAT)";
+                } else {
+                    // Default: return text value. JSON_VALUE already returns NVARCHAR.
+                    return "JSON_VALUE($dbcolumn, '$." . addslashes($jsonkey) . "')";
                 }
 
             default:

@@ -376,6 +376,15 @@ class sharedplaces extends field_base {
                     $additionalwhere
                 ";
                 break;
+            case 'mssql':
+            case 'sqlsrv':
+                $additionalwhere = $onlypriority ? " AND JSON_VALUE(json, '$.sharedplacespriority') = '1' " : '';
+                // OPENJSON on the array returns rows with column [value] containing the element.
+                $where = "EXISTS (
+                        SELECT 1 FROM OPENJSON(json, '$.sharedplaceswithoptions') AS sp
+                        WHERE sp.[value] = '$optionid'
+                    ) $additionalwhere";
+                break;
             default:
                 throw new moodle_exception('Unsupported database type for JSON key extraction.');
         }

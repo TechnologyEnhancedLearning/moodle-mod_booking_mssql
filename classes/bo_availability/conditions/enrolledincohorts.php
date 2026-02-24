@@ -301,6 +301,49 @@ class enrolledincohorts implements bo_condition {
                 )
             )";
             return ['', '', '', $params, $where];
+        } else if ($databasetype == 'mssql' || $databasetype == 'sqlsrv') {
+            // SQL Server: Use OPENJSON and JSON_VALUE to evaluate array elements.
+            $cohorts = [];
+            foreach ($usercohorts as $cohort) {
+                $cohorts[] = "'$cohort->id'";
+            }
+            $appendwhere2 = implode(', ', $cohorts);
+
+            $where = "
+                availability IS NOT NULL
+                AND ((
+                    (NOT EXISTS (
+                        SELECT 1
+                        FROM OPENJSON(availability) WITH (sqlfilter nvarchar(10) '$.sqlfilter') jt
+                        WHERE jt.sqlfilter = '1'
+                    ))
+                )
+                OR (
+                    id IN (
+                        SELECT id
+                        FROM (
+                            SELECT id,
+                                JSON_VALUE(availability, '$[0].cohortidsoperator') AS operator,
+                                (
+                                    SELECT COUNT(1)
+                                    FROM OPENJSON(availability) AS obj
+                                    CROSS APPLY OPENJSON(obj.[value], '$.cohortids') AS cid
+                                ) AS length,
+                                (
+                                    SELECT SUM(CASE WHEN cid2.[value] IN ($appendwhere2) THEN 1 ELSE 0 END)
+                                    FROM OPENJSON(availability) AS obj2
+                                    CROSS APPLY OPENJSON(obj2.[value], '$.cohortids') AS cid2
+                                ) AS true_conditions_count
+                            FROM {booking_options}
+                            WHERE availability IS NOT NULL
+                        ) s1
+                        WHERE (
+                            CASE WHEN operator LIKE 'AND' THEN length = true_conditions_count ELSE true_conditions_count > 0 END
+                        )
+                    )
+                )
+            )";
+            return ['', '', '', $params, $where];
         } else {
             return ['', '', '', $params, ''];
         }
