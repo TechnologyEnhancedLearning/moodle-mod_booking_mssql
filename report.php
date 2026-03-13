@@ -837,6 +837,26 @@ if (!$tableallbookings->is_downloading()) {
                     ) cert ON cert.optionid = ba.optionid AND cert.userid = ba.userid
                     ";
                 break;
+            case 'mssql':
+            case 'sqlsrv':
+                // SQL Server: aggregate per user and optionid using FOR JSON PATH in a correlated subquery.
+                $certificatefrom = "
+                LEFT JOIN (
+                    SELECT
+                        t.userid,
+                        CAST(JSON_VALUE(t.data, '$.bookingoptionid') AS INT) AS optionid,
+                        (
+                            SELECT t2.id, t2.code, t2.expires, t2.data, t2.timecreated
+                            FROM {tool_certificate_issues} t2
+                            WHERE t2.userid = t.userid
+                              AND CAST(JSON_VALUE(t2.data, '$.bookingoptionid') AS INT) = CAST(JSON_VALUE(t.data, '$.bookingoptionid') AS INT)
+                            FOR JSON PATH
+                        ) AS certificate
+                    FROM {tool_certificate_issues} t
+                    GROUP BY t.userid, CAST(JSON_VALUE(t.data, '$.bookingoptionid') AS INT)
+                ) cert ON cert.optionid = ba.optionid AND cert.userid = ba.userid
+                ";
+                break;
             default:
                 throw new \moodle_exception('Unsupported database type for JSON key extraction.');
         }

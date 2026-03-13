@@ -1715,6 +1715,31 @@ class booking {
                         ) bos1
                         WHERE bos1.boavailid = '" . MOD_BOOKING_BO_COND_JSON_ENROLLEDINCOURSE . "'"
                     . $where . " ) bo";
+            case 'sqlsrv_native_moodle_database':
+            case 'mssql_native_moodle_database':
+                // SQL Server: use OPENJSON to expand availability array and extract id/courseids.
+                $where = '';
+                $wherearray = [];
+                foreach ($courses as $courseid) {
+                    $wherearray[] = " EXISTS (
+                        SELECT 1 FROM OPENJSON(bos1.boscourseids) AS cid WHERE cid.[value] = '" . $courseid . "') ";
+                }
+                if (count($courses) > 0) {
+                    $where = " AND ( ( " . implode(" ) OR ( ", $wherearray) . " ) ) ";
+                }
+
+                return "
+                    FROM (
+                        SELECT bos1.*
+                        FROM (
+                            SELECT bo.*, elem.[value] AS elemvalue,
+                                JSON_VALUE(elem.[value], '$.id') AS boavailid,
+                                JSON_QUERY(elem.[value], '$.courseids') AS boscourseids
+                            FROM {booking_options} bo
+                            CROSS APPLY OPENJSON(bo.availability) AS elem
+                        ) bos1
+                        WHERE bos1.boavailid = '" . MOD_BOOKING_BO_COND_JSON_ENROLLEDINCOURSE . "'"
+                    . $where . " ) bo";
         }
     }
 
