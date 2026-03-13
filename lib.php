@@ -1835,8 +1835,7 @@ function booking_generatenewnumbers($bookingdatabooking, $cmid, $optionid, $alls
                FROM {booking_answers}
               WHERE optionid = :optionid
                 AND waitinglist < 2
-           ORDER BY numrec DESC
-              LIMIT 1",
+           ORDER BY numrec DESC",
             ['optionid' => $optionid]
         );
 

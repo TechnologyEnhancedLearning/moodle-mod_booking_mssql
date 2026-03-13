@@ -488,7 +488,7 @@ class booking_handler extends \core_customfield\handler {
         global $DB, $OUTPUT;
         // Just the first optionid we find.
         $anyoptionid = $DB->get_field_sql(
-            "SELECT id FROM {booking_options} LIMIT 1"
+            "SELECT id FROM {booking_options}"
         );
         $settings = singleton_service::get_instance_of_booking_option_settings($anyoptionid);
         $boproperties = $settings->get_booking_option_properties();
