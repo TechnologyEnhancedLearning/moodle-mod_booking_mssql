@@ -302,6 +302,49 @@ class select_user_shopping_cart implements booking_rule_condition {
                 }
 
                 break;
+            case 'mssql':
+            case 'sqlsrv':
+                // SQL Server: expand JSON payments array using OPENJSON and extract fields via JSON_VALUE.
+                // Use $DB->sql_concat to build unique id consistently.
+                $concatparts = [];
+                $concatparts[] = "bo.id";
+                if (strpos($sql->select, 'optiondateid') !== false) {
+                    $concatparts[] = "bod.id";
+                }
+                $concatparts[] = "JSON_VALUE(payments_info.[value], '$.id')";
+                $concatparts[] = "JSON_VALUE(payments_info.[value], '$.timestamp')";
+                $concat = $DB->sql_concat(...array_map(function($p){ return $p; }, $concatparts));
+
+                $sql->select = "$concat AS uniquid,
+                                bo.id optionid,
+                                cm.id cmid,
+                                sch.userid,
+                                CAST(JSON_VALUE(payments_info.[value], '$.timestamp') AS INT) AS datefield,
+                                CAST(JSON_VALUE(payments_info.[value], '$.paid') AS FLOAT) AS paid,
+                                CAST(JSON_VALUE(payments_info.[value], '$.price') AS FLOAT) AS price,
+                                CAST(JSON_VALUE(payments_info.[value], '$.id') AS INT) AS payment_id
+                                ";
+
+                $sql->from .= " RIGHT JOIN {local_shopping_cart_history} sch
+                    ON sch.itemid = bo.id AND sch.componentname = :componentname AND sch.area = :area
+                    CROSS APPLY OPENJSON(sch.json, '$.installments.payments') AS payments_info";
+
+                $sql->where = "CAST(JSON_VALUE(payments_info.[value], '$.paid') AS FLOAT) = 0
+                    AND sch.installments > 0
+                    AND sch.paymentstatus = :paymentstatus
+                    AND sch.json IS NOT NULL
+                    AND sch.json <> ''";
+
+                if ($testmode) {
+                    $sql->where .= " AND sch.userid = :userid ";
+                    $nextruntime = $nextruntime + $params['numberofdays'] * 86400;
+                    $sql->where .= " AND CAST(JSON_VALUE(payments_info.[value], '$.timestamp') AS INT) = :nextruntime ";
+                    $params['nextruntime'] = $nextruntime;
+                } else {
+                    $sql->where .= " AND CAST(JSON_VALUE(payments_info.[value], '$.timestamp') AS INT)
+                                        >= ( :nowparam + (86400 * :numberofdays ))";
+                }
+                break;
         }
     }
 }

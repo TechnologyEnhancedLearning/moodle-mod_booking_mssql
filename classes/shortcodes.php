@@ -1013,6 +1013,8 @@ class shortcodes {
         $supporteddbs = [
         'pgsql_native_moodle_database',
         'mariadb_native_moodle_database',
+        'sqlsrv_native_moodle_database',
+        'mssql_native_moodle_database',
         ];
 
         if (!in_array(get_class($DB), $supporteddbs)) {
