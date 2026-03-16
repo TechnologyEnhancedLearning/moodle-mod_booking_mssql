@@ -62,16 +62,18 @@ class systemanswers extends scope_base_answers {
         // We need to set a limit for the query in mysqlfamily.
         global $DB;
         $orderby = 'ORDER BY ba.id';
+        $top = '';
+        $limit = '';
         $dbtype = get_class($DB);
         if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
-            $limit = ' TOP 1000000 ';
+            $top = ' TOP 1000000 ';
         } else {
             $limit = $DB->sql_limit(1000000, 0);
         }
         $fields = 's1.*';
         $from = "
         (
-            SELECT s2.*
+            SELECT {$top} s2.*
             FROM (
                 $selectpart
                 WHERE ba.waitinglist=:statusparam
