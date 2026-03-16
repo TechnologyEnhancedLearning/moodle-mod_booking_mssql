@@ -68,7 +68,6 @@ class courseanswers extends scope_base_answers {
                 $selectpart
                 WHERE ba.waitinglist=:statusparam
                 AND c.id=:courseid
-                LIMIT 1000000
             ) s2
             $endpart
         ) s1";

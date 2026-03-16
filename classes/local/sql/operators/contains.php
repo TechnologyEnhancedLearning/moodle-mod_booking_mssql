@@ -67,7 +67,9 @@ class contains implements base_operator {
         string $fieldkey,
         string $valuekey
     ): string {
-        global $USER;
+        global $USER, $DB;
+
+        $limit = $DB->sql_limit(1, 0);
 
         return "(
             WITH userval AS (
@@ -76,7 +78,8 @@ class contains implements base_operator {
                 JOIN {user_info_field} uif ON uid.fieldid = uif.id
                 WHERE uid.userid = " . (int)$USER->id . "
                 AND uif.shortname = ($objalias->>'$fieldkey')::text
-                LIMIT 1
+                ORDER BY uid.id
+                {$limit}
             )
             SELECT (
                 COALESCE((SELECT data FROM userval), '') <> ''
@@ -99,7 +102,9 @@ class contains implements base_operator {
         string $fieldkey,
         string $valuekey
     ): string {
-        global $USER;
+        global $USER, $DB;
+
+        $limit = $DB->sql_limit(1, 0);
 
         return "(
             WITH userval AS (
@@ -108,7 +113,8 @@ class contains implements base_operator {
                 JOIN {user_info_field} uif ON uid.fieldid = uif.id
                 WHERE uid.userid = " . (int)$USER->id . "
                 AND uif.shortname = $tablealias.$fieldkey
-                LIMIT 1
+                ORDER BY uid.id
+                {$limit}
             )
             SELECT (
                 COALESCE((SELECT data FROM userval), '') <> ''

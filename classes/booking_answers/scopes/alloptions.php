@@ -220,10 +220,13 @@ class alloptions extends option {
                 FROM {booking_answers} ba
                 JOIN {user} u ON ba.userid = u.id
                 $presencecountsqlpart
-                WHERE ba.waitinglist=:statusparam
-                LIMIT 1000000
+                WHERE ba.waitinglist=:statusparam";
+        global $DB;
+        $orderby = 'ORDER BY ba.id';
+        $limit = $DB->sql_limit(1000000, 0);
+        $from .= "
+                {$orderby} {$limit}
             ) s2
-            $orderby
         ) s1";
 
         return [$fields, $from, $where, $params];

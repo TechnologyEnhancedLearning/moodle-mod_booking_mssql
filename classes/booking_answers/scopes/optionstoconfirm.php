@@ -339,10 +339,13 @@ class optionstoconfirm extends option {
                 JOIN {user} u ON ba.userid = u.id
                 $whereneedtoconfirmjoin
                 $presencecountsqlpart
-                WHERE ba.waitinglist=:statusparam $whereneedtoconfirm
-                LIMIT 1000000
+                WHERE ba.waitinglist=:statusparam $whereneedtoconfirm";
+        global $DB;
+        $orderby = 'ORDER BY ba.id';
+        $limit = $DB->sql_limit(1000000, 0);
+        $from .= "
+                {$orderby} {$limit}
             ) s2
-            $orderby
         ) s1";
         if (!empty($customfields)) {
             [$fields, $from, $where, $params] = $this->join_customfields($fields, $from, $where, $params);

@@ -34,7 +34,7 @@ use mod_booking\customfield\booking_handler;
 use mod_booking\local\modechecker;
 use mod_booking\teachers_handler;
 use mod_booking\utils\wb_payment;
-use local_wunderbyte_table\wunderbyte_table;
+use moodle_exception;
 use stdClass;
 use moodle_url;
 
@@ -199,12 +199,9 @@ class booking {
             'u.email',
             '\' \''
         );
-
-        $sql = "SELECT * FROM (
-                    SELECT u.id, u.firstname, u.lastname, u.email, $fullsql AS fulltextstring
-                    FROM {user} u
-                    WHERE u.deleted = 0
-                ) AS fulltexttable";
+        $sql = "SELECT u.id, u.firstname, u.lastname, u.email, $fullsql AS fulltextstring
+            FROM {user} u
+            WHERE u.deleted = 0";
         // Check for u.deleted = 0 is important, so we do not load any deleted users!
         $params = [];
         if (!empty($query)) {
@@ -222,9 +219,8 @@ class booking {
         }
 
         // We don't return more than 100 records, so we don't need to fetch more from db.
-        $sql .= " limit 102";
-
-        $rs = $DB->get_recordset_sql($sql, $params);
+        $rs = $DB->get_recordset_sql($sql, $params, 0, 102);
+ 
         $count = 0;
         $list = [];
 
@@ -276,12 +272,9 @@ class booking {
         $values = explode(' ', $query);
 
         $fullsql = $DB->sql_concat('\' \'', 'c.id', '\' \'', 'c.shortname', '\' \'', 'c.fullname', '\' \'');
-
-        $sql = "SELECT * FROM (
-                    SELECT c.id, c.shortname, c.fullname, $fullsql AS fulltextstring
+        $sql = "SELECT c.id, c.shortname, c.fullname, $fullsql AS fulltextstring
                     FROM {course} c
-                    WHERE c.visible = 1 AND c.id $incourseids
-                ) AS fulltexttable";
+                    WHERE c.visible = 1 AND c.id $incourseids";
         // Check for c.visible = 1 is important, so we do not load any inivisble courses!
         $params = $inparams;
         if (!empty($query)) {
@@ -299,9 +292,8 @@ class booking {
         }
 
         // We don't return more than 100 records, so we don't need to fetch more from db.
-        $sql .= " limit 102";
+        $rs = $DB->get_recordset_sql($sql, $params, 0, 102);
 
-        $rs = $DB->get_recordset_sql($sql, $params);
         $count = 0;
         $coursearray = [];
 
@@ -343,7 +335,7 @@ class booking {
         $values = explode(' ', $query);
 
         $params = [];
-
+        
         $fullsql = $DB->sql_concat(
             '\' \'',
             'u.id',
@@ -357,12 +349,9 @@ class booking {
         );
 
         // By default, ALL users can be selected as teachers.
-        $sql = "SELECT * FROM (
-                SELECT DISTINCT u.id, u.firstname, u.lastname, u.email, $fullsql AS fulltextstring
+        $sql = "SELECT DISTINCT u.id, u.firstname, u.lastname, u.email, $fullsql AS fulltextstring
                 FROM {user} u
-                WHERE u.deleted = 0
-            ) AS fulltexttable";
-
+                WHERE u.deleted = 0";
         /*
         If the setting 'selectteacherswithprofilefieldonly' is on, then only teachers
         with a certain profile field value can be selected.
@@ -406,9 +395,8 @@ class booking {
         }
 
         // We don't return more than 100 records, so we don't need to fetch more from db.
-        $sql .= " limit 102";
+        $rs = $DB->get_recordset_sql($sql, $params, 0, 102);
 
-        $rs = $DB->get_recordset_sql($sql, $params);
         $count = 0;
         $list = [];
 
@@ -568,19 +556,21 @@ class booking {
     public function get_active_optionids($bookingid, $limitfrom = 0, $limitnum = 0, $searchtext = '') {
         global $DB;
 
+        $select = 'SELECT';
+        $orderby = 'ORDER BY bo.id';
         $limit = '';
         $rsearch = $this->searchparameters($searchtext);
         $search = $rsearch['query'];
         $params = array_merge(['bookingid' => $this->id, 'time' => time()], $rsearch['params']);
 
         if ($limitnum != 0) {
-            $limit = " LIMIT {$limitfrom},{$limitnum}";
+            $limit = $DB->sql_limit($limitnum, $limitfrom);
         }
 
         return $DB->get_records_sql(
-            "SELECT bo.id FROM {booking_options} bo " .
+            "{$select} bo.id FROM {booking_options} bo " .
             "WHERE bo.bookingid = :bookingid AND (bo.courseendtime > :time OR bo.courseendtime = 0)" .
-            " {$search} {$limit}",
+            " {$search} {$orderby} {$limit}",
             $params
         );
     }
@@ -641,18 +631,20 @@ class booking {
     public function get_my_bookingids($limitfrom = 0, $limitnum = 0, $searchtext = '') {
         global $DB, $USER;
 
+        $select = 'SELECT';
+        $orderby = 'ORDER BY ba.optionid';
         $limit = '';
         $rsearch = $this->searchparameters($searchtext);
         $search = $rsearch['query'];
         $params = array_merge(['bookingid' => $this->id, 'userid' => $USER->id], $rsearch['params']);
 
         if ($limitnum != 0) {
-            $limit = " LIMIT {$limitfrom},{$limitnum}";
+            $limit = $DB->sql_limit($limitnum, $limitfrom);
         }
 
         return $DB->get_records_sql(
-            "SELECT ba.optionid id FROM {booking_options} bo LEFT JOIN {booking_answers} ba ON ba.optionid = bo.id WHERE" .
-            " ba.bookingid = :bookingid AND ba.userid = :userid {$search} {$limit}",
+            "{$select} ba.optionid id FROM {booking_options} bo LEFT JOIN {booking_answers} ba ON ba.optionid = bo.id WHERE" .
+            " ba.bookingid = :bookingid AND ba.userid = :userid {$search} {$orderby} {$limit}",
             $params
         );
     }
@@ -741,7 +733,7 @@ class booking {
             AND ba.userid = ?
             AND ba.waitinglist <= ?
             AND (bo.courseendtime = 0 OR bo.courseendtime > ?)",
-            [$this->id, $user->id, MOD_BOOKING_STATUSPARAM_BOOKED, time()]
+            [$this->id, $user->id, MOD_BOOKING_STATUSPARAM_WAITINGLIST, time()]
         );
 
         return (int)$activebookingcount;
@@ -1152,7 +1144,6 @@ class booking {
      * @param array $bookingparams
      * @param string $additionalwhere
      * @param string $innerfrom
-     * @param ?wunderbyte_table $tableinstance
      *
      * @return array
      */
@@ -1167,8 +1158,7 @@ class booking {
         $userid = null,
         $bookingparams = [MOD_BOOKING_STATUSPARAM_BOOKED],
         $additionalwhere = '',
-        $innerfrom = '',
-        $tableinstance = null
+        $innerfrom = ''
     ) {
 
         global $DB;
@@ -1178,7 +1168,7 @@ class booking {
         $offieldsarray = array_map(fn($a) => "bo.$a->name", $columns);
 
         if (empty($fields)) {
-            $fields = " s1.*";
+            $fields = "DISTINCT s1.*";
         }
 
         $where = '';
@@ -1190,7 +1180,7 @@ class booking {
         $groupby = " " . implode(", ", $offieldsarray) . " ";
 
         $outerfrom = "(
-                        SELECT $groupby ";
+                        SELECT DISTINCT $groupby ";
 
         $innerfrom = empty($innerfrom) ? "FROM {booking_options} bo" : $innerfrom;
 
@@ -1198,12 +1188,7 @@ class booking {
         if (!$context || !has_capability('mod/booking:canseeinvisibleoptions', $context)) {
             // If we have a direct link, we only hide totally invisible options.
             // Also, if the user has already booked and looks at her table, she should see it.
-            if (isset($wherearray['id'])) {
-                // If we get one precise settings object, we always fetch it.
-                // Accessibilities need to be handled elsewhere.
-                // This is necessary to make sure we get the object for connected availability conditions.
-                $where = " 1 = 1 ";
-            } else if (!empty($userid)) {
+            if (isset($where['id']) || !empty($userid)) {
                 $where = " invisible <> 1 ";
             } else {
                 // ... then only show visible options.
@@ -1225,45 +1210,21 @@ class booking {
             $innerfrom .= " JOIN {booking_answers} ba
                           ON ba.optionid=bo.id ";
 
-            $outerfrom .= ", ba.waitinglist, ba.userid as bookeduserid, ba.completed ";
+            $outerfrom .= ", ba.waitinglist, ba.userid as bookeduserid ";
             $where .= " AND waitinglist $inorequal
                         AND bookeduserid=:bookeduserid ";
-            $groupby .= " , ba.waitinglist, ba.userid, ba.completed ";
+            $groupby .= " , ba.waitinglist, ba.userid ";
 
             $params['bookeduserid'] = $userid;
 
             $params = array_merge($params, $inparams);
         }
 
-        // Checks if we need to select custom fields.
-        $requiredcustomfields = self::check_required_custom_fields(
-            $searchtext,
-            $fields,
-            $context,
-            $filterarray,
-            $wherearray,
-            $userid,
-            $bookingparams,
-            $additionalwhere,
-            $innerfrom,
-            $tableinstance
-        );
-
-        if (empty($requiredcustomfields)) {
-            [$select1, $from1, $filter1, $params1] = ["", "", "", []];
-        } else {
-            [$select1, $from1, $filter1, $params1] =
-                booking_option_settings::return_sql_for_customfield($filterarray, $requiredcustomfields);
-        }
         // Instead of "where" we return "filter". This is to support the filter functionality of wunderbyte table.
+        [$select1, $from1, $filter1, $params1] = booking_option_settings::return_sql_for_customfield();
         [$select2, $from2, $filter2, $params2] = booking_option_settings::return_sql_for_teachers();
         [$select3, $from3, $filter3, $params3] = booking_option_settings::return_sql_for_imagefiles();
-
-        // When we actually ask for one specific record, we always need to return it and don't apply where conditions.
-        // This is important because of the connected availability conditions.
-        if (empty($wherearray['id'])) {
-            [$select4, $from4, $filter4, $params4, $conditionsql] = bo_info::return_sql_from_conditions($userid ?? 0);
-        }
+        [$select4, $from4, $filter4, $params4, $conditionsql] = bo_info::return_sql_from_conditions($userid ?? 0);
 
         // The $outerfrom takes all the select from the supplementary selects.
         $outerfrom .= !empty($select1) ? ", $select1 " : '';
@@ -1277,9 +1238,8 @@ class booking {
 
         $pattern = '/as.*?,/';
         $addgroupby = preg_replace($pattern, ',', $select1 . ",");
-        $groupby .= !empty($addgroupby) ? ' , ' . $addgroupby : '';
 
-        $groupby .= '';
+        $groupby .= !empty($addgroupby) ? ' , ' . $addgroupby : '';
 
         $addgroupby = preg_replace($pattern, ',', $select3 . ",");
         $groupby .= !empty($addgroupby) ? ' , ' . $addgroupby : '';
@@ -1295,7 +1255,7 @@ class booking {
         $groupby = implode(" , ", $groupbyarray);
 
         // Now we merge all the params arrays.
-        $params = array_merge($params, $params1, $params2, $params3, $params4 ?? []);
+        $params = array_merge($params, $params1, $params2, $params3, $params4);
 
         // We build everything together.
         $from = $outerfrom;
@@ -1439,6 +1399,7 @@ class booking {
         $fields = "DISTINCT " . $fields;
 
         $limit = '';
+        $orderby = '';
         $rsearch = $this->searchparameters($searchtext);
         $search = $rsearch['query'];
         $params = array_merge(['bookingid' => $this->id,
@@ -1446,7 +1407,8 @@ class booking {
                                 ], $rsearch['params']);
 
         if ($limitnum != 0) {
-            $limit = " LIMIT {$limitfrom} OFFSET {$limitnum}";
+            $orderby = 'ORDER BY bo.id';
+            $limit = $DB->sql_limit($limitnum, $limitfrom);
         }
 
         [$inorequal, $inparams] = $DB->get_in_or_equal($booked, SQL_PARAMS_NAMED);
@@ -1478,7 +1440,7 @@ class booking {
             $params['cfsearchtext'] = $searchtext;
         }
 
-        return [$fields, $from, $where, $params];
+        return [$fields, $from, $where, $params, $orderby, $limit];
     }
 
     /**
@@ -1843,6 +1805,7 @@ class booking {
 
         $keystoexclude = [
             'introformat',
+            'customtemplateid',
             'timemodified',
             'json', // Changes in JSON are currently not supported.
         ];
@@ -2089,7 +2052,6 @@ class booking {
             MOD_BOOKING_STATUSPARAM_BOOKINGOPTION_MOVED => get_string('optionmoved', 'mod_booking'),
             MOD_BOOKING_STATUSPARAM_NOTES_EDITED => get_string('notesedited', 'mod_booking'),
             MOD_BOOKING_STATUSPARAM_COMPLETION_CHANGED => get_string('completionchanged', 'mod_booking'),
-            MOD_BOOKING_STATUSPARAM_CONFIRMATION_DELETED => get_string('confirmationdeleted', 'mod_booking'),
         ];
     }
 
@@ -2114,183 +2076,5 @@ class booking {
             }
         }
         return $numberofdaysbefore;
-    }
-
-    /**
-     * Helper function to convert all prices in provided array
-     * into strings with 2 fixed decimals.
-     *
-     * @param array $data reference to the data array.
-     */
-    public static function convert_prices_to_number_format(array &$data) {
-        // Render all prices to 2 fixed decimals.
-        if (!empty($data['price'])) {
-            $data['price'] = format_float(round((float) $data['price'], 2), 2);
-        }
-        if (!empty($data['initialtotal'])) {
-            $data['initialtotal'] = format_float(round((float) $data['initialtotal'], 2), 2);
-        }
-        if (!empty($data['initialtotal_net'])) {
-            $data['initialtotal_net'] = format_float(round((float) $data['initialtotal_net'], 2), 2);
-        }
-        if (!empty($data['discount'])) {
-            $data['discount'] = format_float(round((float) $data['discount'], 2), 2);
-        }
-        if (!empty($data['deductible'])) {
-            $data['deductible'] = format_float(round((float) $data['deductible'], 2), 2);
-        }
-        if (!empty($data['credit'])) {
-            $data['credit'] = format_float(round((float) $data['credit'], 2), 2);
-        }
-        if (!empty($data['remainingcredit'])) {
-            $data['remainingcredit'] = format_float(round((float) $data['remainingcredit'], 2), 2);
-        }
-        if (!empty($data['price_net'])) {
-            $data['price_net'] = format_float(round((float) $data['price_net'], 2), 2);
-        }
-        if (!empty($data['price_gross'])) {
-            $data['price_gross'] = format_float(round((float) $data['price_gross'], 2), 2);
-        }
-        // Also convert prices for each item.
-        if (!empty($data['items'])) {
-            foreach ($data['items'] as &$item) {
-                $item['price'] = format_float(round((float) $item['price'], 2), 2);
-                if (!empty($item['price_net'])) {
-                    $item['price_net'] = format_float(round((float) $item['price_net'], 2), 2);
-                }
-                if (!empty($item['price_gross'])) {
-                    $item['price_gross'] = format_float(round((float) $item['price_gross'], 2), 2);
-                }
-            }
-            unset($item); // Important: Break the reference after the loop!
-            $data['items'] = array_values($data['items']);
-        }
-        // Also convert prices for each history item.
-        if (!empty($data['historyitems'])) {
-            foreach ($data['historyitems'] as &$hitem) {
-                $hitem['price'] = format_float(round((float) $hitem['price'], 2), 2);
-                if (!empty($hitem['price_net'])) {
-                    $hitem['price_net'] = format_float(round((float) $hitem['price_net'], 2), 2);
-                }
-                if (!empty($hitem['price_gross'])) {
-                    $hitem['price_gross'] = format_float(round((float) $hitem['price_gross'], 2), 2);
-                }
-            }
-            unset($hitem); // Important: Break the reference after the loop!
-            $data['historyitems'] = array_values($data['historyitems']);
-        }
-    }
-
-    /**
-     * Helper function to check if cmid belongs to
-     * still existing booking instance.
-     *
-     * @param int $cmid the course module id to check
-     */
-    public static function is_valid_booking_cmid(int $cmid): bool {
-        global $DB;
-        $sql = "SELECT cm.id
-                  FROM {course_modules} cm
-                  JOIN {modules} m ON m.id=cm.module
-                 WHERE m.name='booking'
-                   AND deletioninprogress=0
-                   AND cm.id=:cmid";
-        $params = ['cmid' => $cmid];
-        return !empty($DB->get_records_sql($sql, $params));
-    }
-
-    /**
-     * This function checks if we need to select custom fields.
-     *
-     * We need to select custom fields when any of the following conditions are met:
-     * - If a custom field is present in the $searchtext, $fields, $additionalwhere, or $innerfrom strings.
-     * - If a custom field is present in the $filterarray or $wherearray arrays.
-     * - If a custom field is selected as a sortable column.
-     *
-     * @param string $searchtext
-     * @param ?string $fields
-     * @param ?object $context
-     * @param array $filterarray
-     * @param array $wherearray
-     * @param ?int $userid
-     * @param array $bookingparams
-     * @param string $additionalwhere
-     * @param string $innerfrom
-     * @param ?wunderbyte_table $tableinstance
-     * @return array a list of custom field shortnames that are required.
-     */
-    protected static function check_required_custom_fields(
-        $searchtext = '',
-        $fields = null,
-        $context = null,
-        $filterarray = [],
-        $wherearray = [],
-        $userid = null,
-        $bookingparams = [MOD_BOOKING_STATUSPARAM_BOOKED],
-        $additionalwhere = '',
-        $innerfrom = '',
-        $tableinstance = null
-    ): array {
-        $requiredcustomfields = [];
-
-        // Get all booking custom fields.
-        $customfields = array_map(
-            fn($item) => $item->shortname,
-            booking_handler::get_customfields()
-        );
-
-        // Prepare string-like variables for easier checking.
-        $stringinputs = [];
-        foreach ([$searchtext, $fields, $additionalwhere, $innerfrom] as $value) {
-            // Normalize arrays or objects into strings for search purposes.
-            if (is_array($value)) {
-                $stringinputs[] = json_encode($value);
-            } else if (is_object($value)) {
-                $stringinputs[] = json_encode((array)$value);
-            } else if (is_string($value)) {
-                $stringinputs[] = $value;
-            }
-        }
-
-        // Prepare array-like inputs for easier checking.
-        $arrayinputs = array_merge($filterarray, $wherearray);
-
-        foreach ($customfields as $customfield) {
-            // 1. Check if any custom field name appears in string-like inputs.
-            foreach ($stringinputs as $stringinput) {
-                if (!empty($stringinput) && stripos($stringinput, $customfield) !== false) {
-                    $requiredcustomfields[] = $customfield;
-                    continue 2; // Move to next custom field once matched.
-                }
-            }
-
-            // 2. Check if any custom field is used in filter or where arrays.
-            foreach ($arrayinputs as $key => $value) {
-                if (is_string($key) && stripos($key, $customfield) !== false) {
-                    $requiredcustomfields[] = $customfield;
-                    continue 2;
-                }
-            }
-
-            // 3. Check sortable columns if there are any custom fields.
-            $sortablecolumns = empty($tableinstance) ? [] : array_keys($tableinstance->sortablecolumns);
-            if (in_array($customfield, $sortablecolumns, true)) {
-                $requiredcustomfields[] = $customfield;
-            }
-
-            // 4. Check columns if there are any custom fields.
-            $columns = empty($tableinstance) ? [] : array_keys($tableinstance->columns);
-            if (in_array($customfield, $columns, true)) {
-                $requiredcustomfields[] = $customfield;
-            }
-
-            // 5. Check full text search columns if there are any custom fields.
-            $columns = empty($tableinstance) ? [] : $tableinstance->fulltextsearchcolumns;
-            if (in_array($customfield, $columns, true)) {
-                $requiredcustomfields[] = $customfield;
-            }
-        }
-
-        return array_values(array_unique($requiredcustomfields));
     }
 }

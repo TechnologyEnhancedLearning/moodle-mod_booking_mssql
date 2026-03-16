@@ -74,7 +74,9 @@ class not_equals implements base_operator {
         string $fieldkey,
         string $valuekey
     ): string {
-        global $USER;
+        global $USER, $DB;
+
+        $limit = $DB->sql_limit(1, 0);
 
         // We need to check if the user's profile field value does not equal the condition value.
         // This requires a subquery to get the user's profile field value.
@@ -86,7 +88,8 @@ class not_equals implements base_operator {
                     JOIN {user_info_field} uif ON uid.fieldid = uif.id
                     WHERE uid.userid = " . (int)$USER->id . "
                     AND uif.shortname = ($objalias->>'$fieldkey')::text
-                    LIMIT 1
+                    ORDER BY uid.id
+                    {$limit}
                 ),
                 ''
             ) != ($objalias->>'$valuekey')::text
@@ -106,7 +109,10 @@ class not_equals implements base_operator {
         string $fieldkey,
         string $valuekey
     ): string {
-        global $USER;
+        global $USER, $DB;
+
+        $limit = '';
+        $limit = $DB->sql_limit(1, 0);
 
         return "(
             IFNULL(
@@ -116,7 +122,8 @@ class not_equals implements base_operator {
                     JOIN {user_info_field} uif ON uid.fieldid = uif.id
                     WHERE uid.userid = " . (int)$USER->id . "
                     AND uif.shortname = $tablealias.$fieldkey
-                    LIMIT 1
+                    ORDER BY uid.id
+                    {$limit}
                 ),
                 ''
             ) != $tablealias.$valuekey
