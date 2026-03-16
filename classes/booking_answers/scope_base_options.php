@@ -79,7 +79,12 @@ class scope_base_options extends scope_base {
     public function get_endpart(): string {
         global $DB;
         $orderby = 'ORDER BY bo.titleprefix, bo.text ASC';
-        $limit = $DB->sql_limit(1000000, 0);
+        $dbtype = get_class($DB);
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $limit = ' TOP 1000000 ';
+        } else {
+            $limit = $DB->sql_limit(1000000, 0);
+        }
         return
             "GROUP BY cm.id, c.id, c.fullname, bo.id, ba.waitinglist, bo.titleprefix, bo.text, b.name
             {$orderby} {$limit}";

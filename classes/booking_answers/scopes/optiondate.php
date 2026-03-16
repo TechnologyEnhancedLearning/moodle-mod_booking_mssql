@@ -218,7 +218,12 @@ class optiondate extends scope_base {
             WHERE bod.id = :optiondateid AND ba.waitinglist = :statusparam
             ORDER BY u.lastname, u.firstname, bod.coursestarttime ASC";
         global $DB;
-        $limit = $DB->sql_limit(10000000000, 0);
+        $dbtype = get_class($DB);
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $limit = ' TOP 10000000000 ';
+        } else {
+            $limit = $DB->sql_limit(10000000000, 0);
+        }
         $from .= "
             $limit
         ) s1";

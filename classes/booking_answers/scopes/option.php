@@ -354,7 +354,12 @@ class option extends scope_base {
                 WHERE ba.waitinglist=:statusparam $whereoptionid1 $whereneedtoconfirm";
         global $DB;
         $orderby = 'ORDER BY ba.id';
-        $limit = $DB->sql_limit(1000000, 0);
+        $dbtype = get_class($DB);
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $limit = ' TOP 1000000 ';
+        } else {
+            $limit = $DB->sql_limit(1000000, 0);
+        }
         $from .= "
                 {$orderby} {$limit}
             ) s2
