@@ -327,6 +327,7 @@ class option extends scope_base {
         // We need to set a limit for the query in mysqlfamily.
         $top = '';
         $limit = '';
+        global $DB;
         $dbtype = get_class($DB);
 
         if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
@@ -361,7 +362,6 @@ class option extends scope_base {
                 $whereneedtoconfirmjoin
                 $presencecountsqlpart
                 WHERE ba.waitinglist=:statusparam $whereoptionid1 $whereneedtoconfirm";
-        global $DB;
         $orderby = 'ORDER BY ba.id';
         $from .= "
                 {$orderby} {$limit}
