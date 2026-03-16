@@ -183,10 +183,20 @@ class dynamicdeputyselect extends dynamic_form {
             FROM {user} u
             LEFT JOIN {user_info_data} d1
                 ON d1.userid = u.id
-                AND d1.fieldid = (SELECT {$limit1} id FROM {user_info_field} WHERE shortname = :sv)
+                AND d1.fieldid = (
+                    SELECT id
+                    FROM {user_info_field}
+                    WHERE shortname = :sv
+                    {$limit1}
+                )
             LEFT JOIN {user_info_data} d2
                 ON d2.userid = u.id
-                AND d2.fieldid = (SELECT {$limit1} id FROM {user_info_field} WHERE shortname = :dp)
+                AND d2.fieldid = (
+                    SELECT id
+                    FROM {user_info_field}
+                    WHERE shortname = :dp
+                    {$limit1}
+                )
             WHERE (d1.data LIKE :id1
                 OR d2.data LIKE :id2);";
 

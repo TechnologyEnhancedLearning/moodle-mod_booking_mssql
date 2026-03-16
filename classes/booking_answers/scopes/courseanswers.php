@@ -60,8 +60,6 @@ class courseanswers extends scope_base_answers {
         $selectpart = $this->get_selectpart($scope);
 
         // We need to set a limit for the query in mysqlfamily.
-        global $DB;
-        $limit = '';
         $fields = 's1.*';
         $from = "
         (
