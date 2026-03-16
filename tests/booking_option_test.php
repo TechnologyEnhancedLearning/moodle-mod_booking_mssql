@@ -314,7 +314,7 @@ final class booking_option_test extends advanced_testcase {
         $result = $DB->get_record_sql(
             'SELECT cm.id, cm.course, cm.module, cm.instance, m.name
                 FROM {course_modules} cm LEFT JOIN {modules} m ON m.id = cm.module WHERE cm.course = ?
-                AND cm.completion > 0 LIMIT 1',
+                AND cm.completion > 0 ORDER BY cm.id ' . $DB->sql_limit(1, 0),
             [$course->id]
         );
 

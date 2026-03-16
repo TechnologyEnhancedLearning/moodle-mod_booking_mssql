@@ -174,6 +174,8 @@ class dynamicdeputyselect extends dynamic_form {
         $supervisorfield = get_config('bookingextension_confirmation_supervisor', 'supervisor');
         $deputyfield = get_config('bookingextension_confirmation_supervisor', 'deputy');
 
+        global $DB;
+        $limit1 = $DB->sql_limit(1, 0);
         $sql = "SELECT u.id,
                 u.username,
                 u.firstname,
@@ -181,10 +183,10 @@ class dynamicdeputyselect extends dynamic_form {
             FROM {user} u
             LEFT JOIN {user_info_data} d1
                 ON d1.userid = u.id
-                AND d1.fieldid = (SELECT id FROM {user_info_field} WHERE shortname = :sv LIMIT 1)
+                AND d1.fieldid = (SELECT {$limit1} id FROM {user_info_field} WHERE shortname = :sv)
             LEFT JOIN {user_info_data} d2
                 ON d2.userid = u.id
-                AND d2.fieldid = (SELECT id FROM {user_info_field} WHERE shortname = :dp LIMIT 1)
+                AND d2.fieldid = (SELECT {$limit1} id FROM {user_info_field} WHERE shortname = :dp)
             WHERE (d1.data LIKE :id1
                 OR d2.data LIKE :id2);";
 

@@ -60,6 +60,7 @@ class instanceanswers extends scope_base_answers {
         $selectpart = $this->get_selectpart($scope);
 
         // We need to set a limit for the query in mysqlfamily.
+        global $DB;
         $fields = 's1.*';
         $from = "
         (
@@ -68,7 +69,6 @@ class instanceanswers extends scope_base_answers {
                 $selectpart
                 WHERE ba.waitinglist=:statusparam
                 AND cm.id=:cmid
-                LIMIT 1000000
             ) s2
             $endpart
         ) s1";

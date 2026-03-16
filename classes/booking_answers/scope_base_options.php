@@ -77,10 +77,12 @@ class scope_base_options extends scope_base {
      * @return string the end part of the sql query
      */
     public function get_endpart(): string {
+        global $DB;
+        $orderby = 'ORDER BY bo.titleprefix, bo.text ASC';
+        $limit = $DB->sql_limit(1000000, 0);
         return
             "GROUP BY cm.id, c.id, c.fullname, bo.id, ba.waitinglist, bo.titleprefix, bo.text, b.name
-            ORDER BY bo.titleprefix, bo.text ASC
-            LIMIT 1000000";
+            {$orderby} {$limit}";
     }
 
     /**

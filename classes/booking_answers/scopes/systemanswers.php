@@ -60,6 +60,9 @@ class systemanswers extends scope_base_answers {
         $selectpart = $this->get_selectpart($scope);
 
         // We need to set a limit for the query in mysqlfamily.
+        global $DB;
+        $orderby = 'ORDER BY ba.id';
+        $limit = $DB->sql_limit(1000000, 0);
         $fields = 's1.*';
         $from = "
         (
@@ -67,7 +70,7 @@ class systemanswers extends scope_base_answers {
             FROM (
                 $selectpart
                 WHERE ba.waitinglist=:statusparam
-                LIMIT 1000000
+                {$orderby} {$limit}
             ) s2
             $endpart
         ) s1";

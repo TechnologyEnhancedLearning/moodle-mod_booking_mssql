@@ -216,8 +216,11 @@ class optiondate extends scope_base {
             LEFT JOIN {booking_optiondates_answers} boda
             ON bod.id = boda.optiondateid AND bo.id = boda.optionid AND ba.userid = boda.userid
             WHERE bod.id = :optiondateid AND ba.waitinglist = :statusparam
-            ORDER BY u.lastname, u.firstname, bod.coursestarttime ASC
-            LIMIT 10000000000
+            ORDER BY u.lastname, u.firstname, bod.coursestarttime ASC";
+        global $DB;
+        $limit = $DB->sql_limit(10000000000, 0);
+        $from .= "
+            $limit
         ) s1";
         $params = [
             'optiondateid' => $optiondateid,
