@@ -186,9 +186,18 @@ class optiondate extends scope_base {
         $where = " 1 = 1 ";
 
         // We need to set a limit for the query in mysqlfamily.
+        $top = '';
+        $limit = '';
+        $dbtype = get_class($DB);
+
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $top = ' TOP 1000000 ';
+        } else {
+            $limit = $DB->sql_limit(1000000, 0);
+        }
         $fields = 's1.*';
         $from = " (
-            SELECT " .
+            SELECT {$top} " .
                 $DB->sql_concat("bo.id", "'-'", "bod.id", "'-'", "u.id") .
                 " id,
                 bod.id optiondateid,
@@ -217,8 +226,6 @@ class optiondate extends scope_base {
             ON bod.id = boda.optiondateid AND bo.id = boda.optionid AND ba.userid = boda.userid
             WHERE bod.id = :optiondateid AND ba.waitinglist = :statusparam
             ORDER BY u.lastname, u.firstname, bod.coursestarttime ASC";
-        global $DB;
-        $limit = $DB->sql_limit(10000000000, 0);
         $from .= "
             $limit
         ) s1";

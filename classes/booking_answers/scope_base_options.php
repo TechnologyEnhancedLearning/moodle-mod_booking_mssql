@@ -42,8 +42,14 @@ class scope_base_options extends scope_base {
      * @return string the select part of the sql query
      */
     public function get_selectpart(string $scope): string {
+        global $DB;
+        $dbtype = get_class($DB);
+        $top = '';
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $top = ' TOP 1000000 ';
+        }
         return
-            "SELECT
+            "SELECT {$top}
                 bo.id,
                 bo.id as optionid,
                 ba.waitinglist,
@@ -79,7 +85,14 @@ class scope_base_options extends scope_base {
     public function get_endpart(): string {
         global $DB;
         $orderby = 'ORDER BY bo.titleprefix, bo.text ASC';
-        $limit = $DB->sql_limit(1000000, 0);
+        $dbtype = get_class($DB);
+        $top = '';
+        $limit = '';
+        if ($dbtype === 'sqlsrv_native_moodle_database' || $dbtype === 'mssql_native_moodle_database') {
+            $top = ' TOP 1000000 ';
+        } else {
+            $limit = $DB->sql_limit(1000000, 0);
+        }
         return
             "GROUP BY cm.id, c.id, c.fullname, bo.id, ba.waitinglist, bo.titleprefix, bo.text, b.name
             {$orderby} {$limit}";
