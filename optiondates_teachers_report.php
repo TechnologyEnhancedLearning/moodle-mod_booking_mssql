@@ -143,8 +143,8 @@ $from = "(
     LEFT JOIN {user} u
     ON u.id = bodt.userid
     WHERE bod.optionid = :optionid
-    GROUP BY bod.id, bo.text, bod.optionid, bod.coursestarttime, bod.courseendtime
-    ORDER BY bod.coursestarttime ASC
+    GROUP BY bod.id, bo.text, bod.optionid, bod.coursestarttime, bod.courseendtime, bod.reason, bod.reviewed
+    ORDER BY bod.coursestarttime ASC OFFSET 0 ROWS
     ) s";
 $where = "1=1";
 $params = ['optionid' => $optionid];

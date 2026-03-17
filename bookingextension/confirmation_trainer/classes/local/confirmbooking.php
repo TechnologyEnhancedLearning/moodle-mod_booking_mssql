@@ -111,6 +111,10 @@ class confirmbooking implements confirmbooking_interface {
             case 'mysql':
                 $sql = $this->return_where_sql_mysql($params);
                 break;
+            case 'sqlsrv':
+            case 'mssql':
+                $sql = $this->return_where_sql_mssql($params);
+                break;
             default: // Fallback.
                 throw new \moodle_exception('Unsupported DB driver: ' . $driver);
         }
@@ -147,6 +151,11 @@ class confirmbooking implements confirmbooking_interface {
     public function return_where_sql_mysql(array &$params): string {
         return " ( JSON_UNQUOTE(JSON_EXTRACT(bo.json, '$.waitforconfirmation')) = '1'
                 AND JSON_UNQUOTE(JSON_EXTRACT(bo.json, '$.confirmationtrainerenabled')) = '1' )";
+    }
+
+    public function return_where_sql_mssql(array $params): string {
+        return " ( JSON_VALUE(bo.json, '$.waitforconfirmation') = '1'
+                AND JSON_VALUE(bo.json, '$.confirmationtrainerenabled') = '1' )";
     }
 
     /**

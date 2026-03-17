@@ -46,7 +46,17 @@ class scheduledmails {
             $name = "u.firstname || ' ' || u.lastname";
             $optionid = "ta.customdata::jsonb ->> 'optionid'";
             $cmid = "ta.customdata::jsonb ->> 'cmid'";
-        } else { // MySQL.
+        } else if ($dbfamily === 'mssql' || $dbfamily === 'sqlsrv') {
+            $ruleidextract = "JSON_VALUE(ta.customdata, '$.ruleid')";
+            $ruleid = "CAST(JSON_VALUE(ta.customdata, '$.ruleid') AS UNSIGNED)";
+            $bookingrulename = "JSON_VALUE(br.rulejson, '$.name')";
+            $userid = "JSON_VALUE(ta.customdata, '$.userid')";
+            $messagesubject = "JSON_VALUE(br.rulejson, '$.actiondata.subject')";
+            $messagetext = "JSON_VALUE(br.rulejson, '$.actiondata.template')";
+            $name = "CONCAT(u.firstname, ' ', u.lastname)";
+            $optionid = "JSON_VALUE(ta.customdata, '$.optionid')";
+            $cmid = "JSON_VALUE(ta.customdata, '$.cmid')";
+        }else { // MySQL.
             $ruleidextract = "JSON_UNQUOTE(JSON_EXTRACT(ta.customdata, '$.ruleid'))";
             $ruleid = "CAST(JSON_UNQUOTE(JSON_EXTRACT(ta.customdata, '$.ruleid')) AS UNSIGNED)";
             $bookingrulename = "JSON_UNQUOTE(JSON_EXTRACT(br.rulejson, '$.name'))";

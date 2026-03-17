@@ -174,7 +174,7 @@ if (!$teachersinstancereporttable->is_downloading()) {
         ON u.id = bt.userid
         WHERE bt.bookingid = :bookingid
         $andteacher
-        ORDER BY u.lastname
+        ORDER BY u.lastname OFFSET 0 ROWS
     ) s";
 
     $where = "1=1";
