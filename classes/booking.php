@@ -209,8 +209,10 @@ class booking {
             $firstrun = true;
             $counter = 1;
             foreach ($values as $value) {
-                $sql .= $firstrun ? ' WHERE ' : ' AND ';
-                $sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                //$sql .= $firstrun ? ' WHERE ' : ' AND ';
+                $sql .= ' AND ';
+                // $sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                $sql .= " " . $DB->sql_like(" ( $fullsql ) ", ':param' . $counter, false) . " ";
                 // If it's numeric, we search for the full number - so we need to add blanks.
                 $params['param' . $counter] = is_numeric($value) ? "% $value %" : "%$value%";
                 $firstrun = false;
@@ -282,8 +284,10 @@ class booking {
             $firstrun = true;
             $counter = 1;
             foreach ($values as $value) {
-                $sql .= $firstrun ? ' WHERE ' : ' AND ';
-                $sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                //$sql .= $firstrun ? ' WHERE ' : ' AND ';
+                $sql .= ' AND ';
+                //$sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                $sql .= " " . $DB->sql_like(" ( $fullsql ) ", ':param' . $counter, false) . " ";
                 // If it's numeric, we search for the full number - so we need to add blanks.
                 $params['param' . $counter] = is_numeric($value) ? "% $value %" : "%$value%";
                 $firstrun = false;
@@ -386,8 +390,10 @@ class booking {
             $firstrun = true;
             $counter = 1;
             foreach ($values as $value) {
-                $sql .= $firstrun ? ' WHERE ' : ' AND ';
-                $sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                //$sql .= $firstrun ? ' WHERE ' : ' AND ';
+                $sql .= ' AND ';
+                //$sql .= " " . $DB->sql_like('fulltextstring', ':param' . $counter, false) . " ";
+                $sql .= " " . $DB->sql_like(" ( $fullsql ) ", ':param' . $counter, false) . " ";
                 $params['param' . $counter] = "%$value%";
                 $firstrun = false;
                 $counter++;

@@ -4148,10 +4148,12 @@ class booking_option {
 
         // We don't return more than 100 records, so we don't need to fetch more from db.
         $orderby = 'ORDER BY id';
-        $limit = $DB->sql_limit(102, 0);
-        $sql .= " {$orderby} {$limit}";
+        //$limit = $DB->sql_limit(102, 0);
+        //$sql .= " {$orderby} {$limit}";
+        $sql .= " {$orderby}";
 
-        $rs = $DB->get_recordset_sql($sql, $params);
+        //$rs = $DB->get_recordset_sql($sql, $params);
+        $rs = $DB->get_recordset_sql($sql, $params, 0, 102);
         $count = 0;
         $list = [];
 
