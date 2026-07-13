@@ -25,13 +25,17 @@
 namespace mod_booking;
 
 use coding_exception;
+use mod_booking\local\slotbooking\slot_answer;
+use mod_booking\bo_availability\conditions\customform;
 use mod_booking\output\report_edit_bookingnotes;
 use html_writer;
 use moodle_url;
 use stdClass;
 use user_picture;
+use context_module;
 defined('MOODLE_INTERNAL') || die();
-require_once('../../lib/tablelib.php');
+global $CFG;
+require_once($CFG->libdir . '/tablelib.php');
 
 /**
  * Displays all bookings for a booking option
@@ -211,6 +215,14 @@ class all_userbookings extends \table_sql {
      * @throws coding_exception
      */
     protected function col_coursestarttime($values) {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!empty($slotdata['slots']) && is_array($slotdata['slots'])) {
+            $firstslot = reset($slotdata['slots']);
+            if (is_array($firstslot) && !empty($firstslot['start'])) {
+                return userdate((int)$firstslot['start'], get_string('strftimedatetime', 'langconfig'));
+            }
+        }
+
         if ($values->coursestarttime == 0) {
             return '';
         } else {
@@ -225,11 +237,216 @@ class all_userbookings extends \table_sql {
      * @throws coding_exception
      */
     protected function col_courseendtime($values) {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!empty($slotdata['slots']) && is_array($slotdata['slots'])) {
+            $lastslot = end($slotdata['slots']);
+            if (is_array($lastslot) && !empty($lastslot['end'])) {
+                return userdate((int)$lastslot['end'], get_string('strftimedatetime', 'langconfig'));
+            }
+        }
+
         if ($values->courseendtime == 0) {
             return '';
         } else {
             return userdate($values->courseendtime, get_string('strftimedatetime', 'langconfig'));
         }
+    }
+
+    /**
+     * Column for number of booked slots.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_slotnumslots($values): string {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (empty($slotdata['slots']) || !is_array($slotdata['slots'])) {
+            return '';
+        }
+
+        return (string)count($slotdata['slots']);
+    }
+
+    /**
+     * Column for slot start time.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_slotstarttime($values): string {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!empty($slotdata['slots']) && is_array($slotdata['slots'])) {
+            $firstslot = reset($slotdata['slots']);
+            if (is_array($firstslot) && !empty($firstslot['start'])) {
+                return userdate((int)$firstslot['start'], get_string('strftimedatetime', 'langconfig'));
+            }
+        }
+
+        if (!empty($values->startdate)) {
+            return userdate((int)$values->startdate, get_string('strftimedatetime', 'langconfig'));
+        }
+
+        return '';
+    }
+
+    /**
+     * Column for slot end time.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_slotendtime($values): string {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!empty($slotdata['slots']) && is_array($slotdata['slots'])) {
+            $lastslot = end($slotdata['slots']);
+            if (is_array($lastslot) && !empty($lastslot['end'])) {
+                return userdate((int)$lastslot['end'], get_string('strftimedatetime', 'langconfig'));
+            }
+        }
+
+        if (!empty($values->enddate)) {
+            return userdate((int)$values->enddate, get_string('strftimedatetime', 'langconfig'));
+        }
+
+        return '';
+    }
+
+    /**
+     * Column for assigned teachers from slot JSON.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_slotteachers($values): string {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!empty($slotdata['teachers_per_slot']) && is_array($slotdata['teachers_per_slot'])) {
+            $allteacherids = [];
+            foreach ($slotdata['teachers_per_slot'] as $entry) {
+                if (!is_array($entry) || empty($entry['teachers']) || !is_array($entry['teachers'])) {
+                    continue;
+                }
+                $allteacherids = array_merge($allteacherids, $entry['teachers']);
+            }
+
+            $allteacherids = array_values(array_unique(array_filter(array_map('intval', $allteacherids), function ($id) {
+                return $id > 0;
+            })));
+
+            $teachers = !empty($allteacherids) ? user_get_users_by_id($allteacherids) : [];
+            $lines = [];
+
+            foreach ($slotdata['teachers_per_slot'] as $entry) {
+                if (!is_array($entry) || empty($entry['teachers']) || !is_array($entry['teachers'])) {
+                    continue;
+                }
+
+                $teacherids = array_values(array_unique(array_filter(array_map('intval', $entry['teachers']), function ($id) {
+                    return $id > 0;
+                })));
+                if (empty($teacherids)) {
+                    continue;
+                }
+
+                $names = [];
+                foreach ($teacherids as $teacherid) {
+                    if (!empty($teachers[$teacherid])) {
+                        $names[] = fullname($teachers[$teacherid]);
+                    } else {
+                        $names[] = (string)$teacherid;
+                    }
+                }
+
+                $start = (int)($entry['start'] ?? 0);
+                $end = (int)($entry['end'] ?? 0);
+
+                if ($start > 0 && $end > $start) {
+                    $slotlabel = userdate($start, get_string('strftimedatetime', 'langconfig'))
+                        . ' - ' . userdate($end, get_string('strftimetime', 'langconfig'));
+                    $lines[] = $slotlabel . ': ' . implode(', ', $names);
+                } else {
+                    $lines[] = implode(', ', $names);
+                }
+            }
+
+            if (!empty($lines)) {
+                return implode(' ; ', $lines);
+            }
+        }
+
+        if (empty($slotdata['teachers']) || !is_array($slotdata['teachers'])) {
+            return '';
+        }
+
+        $teacherids = array_values(array_unique(array_filter(array_map('intval', $slotdata['teachers']), function ($id) {
+            return $id > 0;
+        })));
+
+        if (empty($teacherids)) {
+            return '';
+        }
+
+        $teachers = user_get_users_by_id($teacherids);
+        if (empty($teachers)) {
+            return implode(', ', $teacherids);
+        }
+
+        $names = [];
+        foreach ($teacherids as $teacherid) {
+            if (!empty($teachers[$teacherid])) {
+                $names[] = fullname($teachers[$teacherid]);
+            } else {
+                $names[] = (string)$teacherid;
+            }
+        }
+
+        return implode(', ', $names);
+    }
+
+    /**
+     * Column for slot price paid from slot JSON.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_slotprice($values): string {
+        $slotdata = slot_answer::get_slot_data($values);
+        if (!isset($slotdata['price'])) {
+            return '';
+        }
+
+        return (string)$slotdata['price'];
+    }
+
+    /**
+     * Column for move slot action.
+     *
+     * @param object $values
+     * @return string
+     */
+    protected function col_moveslot($values): string {
+        if (empty($this->cm)) {
+            return '';
+        }
+
+        $context = context_module::instance($this->cm->id);
+        $canmoveslots = has_capability('mod/booking:moveslots', $context)
+            || has_capability('mod/booking:updatebooking', $context);
+        if (!$canmoveslots) {
+            return '';
+        }
+
+        $slotdata = slot_answer::get_slot_data($values);
+        if (empty($slotdata)) {
+            return '';
+        }
+
+        $url = new moodle_url('/mod/booking/moveslot.php', [
+            'id' => $this->cm->id,
+            'optionid' => $values->optionid,
+            'baid' => $values->id,
+        ]);
+
+        return html_writer::link($url, get_string('slot_move_action', 'mod_booking'));
     }
 
     /**
@@ -281,9 +498,11 @@ class all_userbookings extends \table_sql {
                 return get_string('sharedplacenoselect', 'mod_booking', $values);
             }
 
+            $userlabel = fullname($values);
             return '<input id="check' . $values->id .
                      '" type="checkbox" class="usercheckbox" name="user[][' . $values->userid .
-                     ']" value="' . $values->userid . '" />';
+                     ']" value="' . $values->userid . '" aria-label="' .
+                     s(get_string('selectuser', 'mod_booking')) . '" />';
         } else {
             return '';
         }
@@ -386,6 +605,7 @@ class all_userbookings extends \table_sql {
             $ba = singleton_service::get_instance_of_booking_answers($settings);
             $usersonlist = $ba->get_usersonlist();
             $usersonwaitinglist = $ba->get_usersonwaitinglist();
+
             if (
                 $answer = $usersonlist[(int)$value->userid]
                 ?? $usersonwaitinglist[(int)$value->userid]
@@ -393,18 +613,9 @@ class all_userbookings extends \table_sql {
             ) {
                 [$prefix, $counter] = explode('_', $colname);
 
-                if (
-                    isset($answer->json) &&
-                    $jsonobject = json_decode($answer->json)
-                ) {
-                    if (isset($jsonobject->condition_customform)) {
-                        foreach ($jsonobject->condition_customform as $key => $value) {
-                            $array = explode('_', $key);
-                            if (isset($array[2]) &&  $array[2] == $counter) {
-                                return format_string((string)$value);
-                            }
-                        }
-                    }
+                $customformvalue = customform::get_customform_field_value($settings, $answer, (int)$counter);
+                if ($customformvalue !== null) {
+                    return format_string($customformvalue);
                 }
             }
             return '';
@@ -564,7 +775,13 @@ class all_userbookings extends \table_sql {
                         ['class' => "transfersubmit"]
                     );
                     echo \html_writer::div(get_string('transferheading', 'mod_booking'), 'mt-2');
-                    echo $dropdown = \html_writer::select($transferto, 'transferoption');
+                    echo $dropdown = \html_writer::select(
+                        $transferto,
+                        'transferoption',
+                        '',
+                        null,
+                        ['aria-label' => get_string('transferheading', 'mod_booking')]
+                    );
                     $attributes = ['type' => 'submit',
                         'class' => 'transfersubmit btn btn-secondary btn-sm',
                         'id' => 'transfersubmit',
@@ -671,7 +888,10 @@ class all_userbookings extends \table_sql {
                 'selectpresencestatus',
                 '',
                 ['' => 'choosedots'],
-                ['class' => 'mt-3']
+                [
+                    'class' => 'mt-3',
+                    'aria-label' => get_string('selectpresencestatus', 'booking'),
+                ]
             );
 
             echo '<div class="singlebutton ms-2">' .
@@ -683,6 +903,62 @@ class all_userbookings extends \table_sql {
 
         echo '<hr>';
     }
+    /**
+     * Return certificate issues for the current row, using SQL fallback if aggregated JSON is invalid.
+     *
+     * @param stdClass $values
+     * @return array
+     */
+    private function get_certificates_for_row(stdClass $values): array {
+        global $DB;
+
+        if (!empty($values->certificate)) {
+            $decoded = json_decode($values->certificate);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+            if (is_object($decoded)) {
+                return (array)$decoded;
+            }
+        }
+
+        if (empty($values->userid) || empty($values->optionid)) {
+            return [];
+        }
+
+        $params = [
+            'userid' => (int)$values->userid,
+            'optionid' => (int)$values->optionid,
+        ];
+        $databasetype = $DB->get_dbfamily();
+
+        switch ($databasetype) {
+            case 'postgres':
+                $sql = "
+                    SELECT id, code, expires, timecreated
+                      FROM {tool_certificate_issues}
+                     WHERE userid = :userid
+                       AND (data::jsonb ->> 'bookingoptionid') ~ '^[0-9]+$'
+                       AND (data::jsonb ->> 'bookingoptionid')::int = :optionid
+                     ORDER BY timecreated, id
+                ";
+                break;
+            case 'mysql':
+                $sql = "
+                    SELECT id, code, expires, timecreated
+                      FROM {tool_certificate_issues}
+                     WHERE userid = :userid
+                       AND CAST(JSON_UNQUOTE(JSON_EXTRACT(data, '$.bookingoptionid')) AS UNSIGNED) = :optionid
+                     ORDER BY timecreated, id
+                ";
+                break;
+            default:
+                return [];
+        }
+
+        return array_values($DB->get_records_sql($sql, $params));
+    }
+
     /**
      * Column for latest Certificate.
      *
@@ -696,16 +972,22 @@ class all_userbookings extends \table_sql {
         $cross = '&#x274C; ';
         $now = time();
 
-        if (!isset($values->certificate)) {
+        $certificates = $this->get_certificates_for_row($values);
+        if (empty($certificates)) {
             return "";
         }
 
-        $certificates = json_decode($values->certificate);
         $expiredates = [];
+        $timecreated = [];
+        $code = [];
         foreach ($certificates as $cert) {
             $expiredates[] = $cert->expires;
             $timecreated[] = $cert->timecreated;
             $code[] = $cert->code;
+        }
+
+        if (empty($timecreated) || empty($code)) {
+            return "";
         }
 
         $lastexpiredate = end($expiredates);
@@ -735,10 +1017,10 @@ class all_userbookings extends \table_sql {
     public function col_allusercertificates(stdClass $values) {
         global $OUTPUT;
         static $id = 1;
-        if (empty($values->certificate)) {
+        $certificates = $this->get_certificates_for_row($values);
+        if (empty($certificates)) {
             return "";
         }
-        $certificates = json_decode($values->certificate);
         $certdata = [];
         $fullname = "{$values->firstname} {$values->lastname}";
 

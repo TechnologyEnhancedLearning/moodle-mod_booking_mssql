@@ -25,6 +25,7 @@
 
 namespace mod_booking\booking_answers\scopes;
 
+use context_system;
 use local_wunderbyte_table\wunderbyte_table;
 use mod_booking\booking_answers\scope_base;
 use mod_booking\output\booked_users;
@@ -42,6 +43,12 @@ use moodle_url;
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class option extends scope_base {
+    /**
+     * Scope name.
+     * @var string
+     */
+    public $scope = 'option';
+
     /**
      * Render users table based on status param
      *
@@ -191,15 +198,56 @@ class option extends scope_base {
                     'optionid' => $optionid ?? 0,
                 ]
             );
+
+            if (has_capability('mod/booking:communicate', context_module::instance($cmid))) {
+                $table->actionbuttons[] = booked_users::create_action_button(
+                    'sendcustommsg',
+                    'fa fa-envelope',
+                    'mod_booking\\form\\modal_send_custom_message',
+                    [
+                        'titlestring' => 'sendcustommsg',
+                        'submitbuttonstring' => 'sendmessage',
+                        'component' => 'mod_booking',
+                        'cmid' => $cmid,
+                        'optionid' => $optionid ?? 0,
+                    ],
+                    'btn btn-primary btn-sm ms-2'
+                );
+            }
+
+            if (has_capability('mod/booking:subscribeusers', context_module::instance($cmid))) {
+                $table->actionbuttons[] = booked_users::create_action_button(
+                    'transferusers',
+                    'fa fa-exchange',
+                    'mod_booking\\form\\modal_transfer_users',
+                    [
+                        'titlestring' => 'transferusers',
+                        'submitbuttonstring' => 'transfer',
+                        'component' => 'mod_booking',
+                        'cmid' => $cmid,
+                        'optionid' => $optionid ?? 0,
+                    ],
+                    'btn btn-primary btn-sm ms-2'
+                );
+            }
         }
 
-        if (!empty($certificatebutton = booked_users::create_certificate_button())) {
+        if (
+            $statusparam == MOD_BOOKING_STATUSPARAM_BOOKED
+            && !empty($certificatebutton = booked_users::create_certificate_button())
+        ) {
             $table->actionbuttons[] = $certificatebutton;
         }
 
         if ($statusparam != MOD_BOOKING_STATUSPARAM_DELETED) {
             $table->addcheckboxes = true;
-            $table->actionbuttons[] = booked_users::create_delete_button();
+
+            // Only show delete button if user has capability to delete responses.
+            if (
+                $this->has_capability_in_scope($scopeid, 'mod/booking:deleteresponses')
+            ) {
+                $table->actionbuttons[] = booked_users::create_delete_button();
+            }
         }
 
         return $table;
@@ -377,8 +425,12 @@ class option extends scope_base {
      * @param string $capability
      */
     public function has_capability_in_scope($scopeid, $capability) {
-        $cmid = singleton_service::get_instance_of_booking_option_settings($scopeid)->cmid;
-        return has_capability($capability, context_module::instance($cmid));
+        if (!empty($scopeid)) {
+            $cmid = singleton_service::get_instance_of_booking_option_settings($scopeid)->cmid;
+            return has_capability($capability, context_module::instance($cmid));
+        } else {
+            return has_capability($capability, context_system::instance());
+        }
     }
 
     /**

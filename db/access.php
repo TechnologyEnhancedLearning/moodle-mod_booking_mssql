@@ -74,7 +74,17 @@ $capabilities = [
             'manager' => CAP_ALLOW,
         ],
     ],
+    // This is ONLY the editing capability, but we kept the name for legacy reasons.
     'mod/booking:addeditownoption' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // This is the capability to ADD new booking options. It is separate from the editing capability.
+    'mod/booking:addoption' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
@@ -199,12 +209,57 @@ $capabilities = [
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => ['manager' => CAP_ALLOW],
     ],
+    'mod/booking:manageslotunavailability' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'mod/booking:moveslots' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'coursecreator' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+        'clonepermissionsfrom' => 'mod/booking:updatebooking',
+    ],
+    'mod/booking:moveslotsself' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'user' => CAP_ALLOW,
+            'student' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
     'mod/booking:changelockedcustomfields' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => ['manager' => CAP_ALLOW],
     ],
     'mod/booking:bookforothers' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'mod/booking:bookallstudents' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'mod/booking:bookmyteam' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
@@ -247,6 +302,14 @@ $capabilities = [
         ],
     ],
     // Capability to manage optiondates.
+    'mod/booking:managecustomfieldoptions' => [
+        'riskbitmask' => RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
     'mod/booking:manageoptiondates' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
@@ -284,6 +347,15 @@ $capabilities = [
     // Capability to edit booking rules.
     // Has to be assigned via global role!
     'mod/booking:editbookingrules' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // Capability to administrate certificate conditions.
+    // Has to be assigned via global role!
+    'mod/booking:editcertificateconditions' => [
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
         'archetypes' => [
@@ -359,7 +431,7 @@ $capabilities = [
     ],
     'mod/booking:executebulkoperations' => [
         'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
+        'contextlevel' => CONTEXT_MODULE,
         'archetypes' => [
             'manager' => CAP_ALLOW,
         ],
@@ -445,6 +517,32 @@ $capabilities = [
         'archetypes' => [
             'teacher' => CAP_ALLOW,
             'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'mod/booking:editsemesters' => [
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'mod/booking:canseenumberofbookings' => [
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    // Allows selecting ANY course as a duplication source, even courses the user
+    // cannot otherwise see or access. Course duplication copies the whole source course
+    // into a category the user can reach, so this effectively grants read access to that
+    // content - hence the data/personal risk flags and the manager-only default.
+    'mod/booking:duplicateanycourse' => [
+        'riskbitmask' => RISK_DATALOSS | RISK_PERSONAL,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
             'manager' => CAP_ALLOW,
         ],
     ],

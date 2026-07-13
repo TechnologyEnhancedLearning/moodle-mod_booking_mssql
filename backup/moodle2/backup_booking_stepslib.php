@@ -65,6 +65,7 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
                 'defaultoptionsort', 'defaultsortorder', 'showviews', 'autcractive', 'autcrprofile',
                 'autcrvalue', 'autcrtemplate', 'semesterid', 'iselective', 'consumeatonce', 'maxcredits',
                 'enforceorder', 'enforceteacherorder', 'json', 'toporientation',
+                'cancelrelativedate', 'allowupdatetimestamp',
             ]
         );
 
@@ -75,7 +76,8 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
             [
                 'text', 'maxanswers', 'maxoverbooking', 'minanswers', 'bookingopeningtime', 'bookingclosingtime', 'courseid',
                 'coursestarttime', 'courseendtime', 'enrolmentstatus', 'description', 'descriptionformat',
-                'limitanswers', 'timecreated', 'timemodified', 'addtocalendar', 'calendarid', 'pollurl',
+                'limitanswers', 'timecreated', 'timemodified', 'usercreated', 'usermodified',
+                'addtocalendar', 'calendarid', 'pollurl',
                 'groupid', 'sent', 'sent2', 'sentteachers', 'location', 'institution', 'address',
                 'pollurlteachers', 'howmanyusers', 'pollsend', 'removeafterminutes',
                 'notificationtext', 'notificationtextformat', 'disablebookingusers',
@@ -192,6 +194,14 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
             ['bookingid', 'optionid', 'answerid', 'userid', 'status', 'json']
         );
 
+        // Booking rules that are scoped to this instance (linked via the module contextid).
+        $bookingrules = new backup_nested_element('bookingrules');
+        $bookingrule = new backup_nested_element(
+            'bookingrule',
+            ['id'],
+            ['contextid', 'rulename', 'rulejson', 'eventname', 'useastemplate', 'isactive']
+        );
+
         // Build the tree.
         $booking->add_child($options);
         $options->add_child($option);
@@ -234,6 +244,9 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
 
         $booking->add_child($history);
         $history->add_child($historyitem);
+
+        $booking->add_child($bookingrules);
+        $bookingrules->add_child($bookingrule);
 
         // Define sources.
         $booking->set_source_table('booking', ['id' => backup::VAR_ACTIVITYID]);
@@ -294,6 +307,16 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
             $subbookingoption->set_source_table('booking_subbooking_options', ['optionid' => backup::VAR_PARENTID]);
         }
 
+        // Only backup (or duplicate) booking rules, if config setting is set.
+        // We only back up rules scoped to this instance (contextid = this module's context).
+        // Global rules (contextid = 1) apply everywhere already and are intentionally excluded.
+        if (get_config('booking', 'duplicationrestorerules')) {
+            $bookingrule->set_source_sql(
+                "SELECT * FROM {booking_rules} WHERE contextid = :contextid",
+                ['contextid' => backup::VAR_CONTEXTID]
+            );
+        }
+
         // All the rest of elements only happen if we are including user info.
         if ($userinfo) {
             $answer->set_source_table('booking_answers', ['bookingid' => backup::VAR_PARENTID]);
@@ -301,6 +324,8 @@ class backup_booking_activity_structure_step extends backup_activity_structure_s
 
         // Define id annotations.
         $answer->annotate_ids('user', 'userid');
+        $option->annotate_ids('user', 'usercreated');
+        $option->annotate_ids('user', 'usermodified');
 
         // Define file annotations.
         $booking->annotate_files('mod_booking', 'intro', null); // This file area hasn't itemid.

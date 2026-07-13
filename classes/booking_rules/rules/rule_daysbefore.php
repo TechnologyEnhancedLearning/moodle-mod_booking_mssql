@@ -17,6 +17,7 @@
 namespace mod_booking\booking_rules\rules;
 
 use context;
+use core_component;
 use mod_booking\bo_availability\bo_info;
 use mod_booking\booking;
 use mod_booking\booking_rules\actions_info;
@@ -179,7 +180,7 @@ class rule_daysbefore implements booking_rule {
             $jsonobject->useastemplate = $data->useastemplate;
             $record->useastemplate = $data->useastemplate;
         }
-
+        $jsonobject->ruledata->component = core_component::get_component_from_classname(static::class);
         $record->rulejson = json_encode($jsonobject);
         $record->rulename = $this->rulename;
         $record->contextid = $data->contextid ?? 1;
@@ -228,22 +229,8 @@ class rule_daysbefore implements booking_rule {
             return;
         }
 
-        // Self-learning courses use coursestarttime only for sorting #684.
-        // So if a rule is dependent on date(s) of the option, we just skip the execution.
-        if (!empty($settings->selflearningcourse)) {
-            if (
-                !empty($jsonobject->ruledata->datefield)
-                && in_array(
-                    $jsonobject->ruledata->datefield,
-                    [
-                        'coursestarttime',
-                        'courseendtime',
-                        'optiondatestarttime',
-                    ]
-                )
-            ) {
-                return;
-            }
+        if ($this->should_skip_for_selflearningcourse($settings, $jsonobject)) {
+            return;
         }
 
         // We reuse this code when we check for validity, therefore we use a separate function.
@@ -262,7 +249,9 @@ class rule_daysbefore implements booking_rule {
                 $this->days = (int)$record->daystonotify;
             }
             // Set the time of when the task should run.
-            $nextruntime = (int) $record->datefield - ((int) $this->days * 86400);
+            // Use strtotime to correctly handle DST transitions instead of fixed 86400s per day.
+            $daysoffset = -1 * (int) $this->days;
+            $nextruntime = strtotime("{$daysoffset} days", (int) $record->datefield);
             $record->rulename = $this->rulename;
             $record->nextruntime = $nextruntime;
             $action->execute($record);
@@ -290,6 +279,12 @@ class rule_daysbefore implements booking_rule {
             return false;
         }
 
+        $settings = singleton_service::get_instance_of_booking_option_settings($optionid);
+        $jsonobject = json_decode($this->rulejson);
+        if ($this->should_skip_for_selflearningcourse($settings, $jsonobject)) {
+            return false;
+        }
+
         // We retrieve the same sql we also use in the execute function.
         $records = $this->get_records_for_execution($optionid, $userid, true, $nextruntime);
 
@@ -314,7 +309,8 @@ class rule_daysbefore implements booking_rule {
                 }
                 // Match found, now compare the records.
                 $days = isset($record->daystonotify) ? (int)$record->daystonotify : 0;
-                $oldnextruntime = (int)$record->datefield - ($days * 86400);
+                $daysoffset = -1 * $days;
+                $oldnextruntime = strtotime("{$daysoffset} days", (int)$record->datefield);
 
                 if ($oldnextruntime == $nextruntime) {
                     $rulestillapplies = true;
@@ -323,9 +319,42 @@ class rule_daysbefore implements booking_rule {
                 // If we found a matching optiondateid but times don't match,
                 // set to false - maybe rules has changed.
                 $rulestillapplies = false;
+            } else {
+                // If there are no optiondates involved, we just compare the runtimes.
+                if (isset($record->daystonotify)) {
+                    $this->days = (int)$record->daystonotify;
+                }
+                $daysoffset = -1 * (int) $this->days;
+                $oldnextruntime = strtotime("{$daysoffset} days", (int) $record->datefield);
+                if ($oldnextruntime == $nextruntime) {
+                    $rulestillapplies = true;
+                    break;
+                }
+                $rulestillapplies = false;
             }
         }
         return $rulestillapplies;
+    }
+
+    /**
+     * Self-learning courses use some date fields only for sorting and not for reminders.
+     *
+     * @param object $settings
+     * @param stdClass $jsonobject
+     * @return bool
+     */
+    private function should_skip_for_selflearningcourse(object $settings, stdClass $jsonobject): bool {
+        return !empty($settings->selflearningcourse)
+            && !empty($jsonobject->ruledata->datefield)
+            && in_array(
+                $jsonobject->ruledata->datefield,
+                [
+                    'coursestarttime',
+                    'courseendtime',
+                    'optiondatestarttime',
+                ],
+                true
+            );
     }
 
     /**

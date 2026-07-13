@@ -38,6 +38,7 @@ use mod_booking\event\bookinganswer_presencechanged;
 use mod_booking\event\bookinganswer_notesedited;
 use mod_booking\local\calendar\calendar_helper;
 use mod_booking\local\certificateclass;
+use mod_booking\local\certificate_conditions\certificate_conditions;
 use mod_booking\local\checkanswers\checkanswers;
 use mod_booking\local\mobile\customformstore;
 use mod_booking\option\fields\certificate;
@@ -360,6 +361,14 @@ class mod_booking_observer {
             $optionid
         );
 
+        if (empty(get_config('booking', 'certificatemanualtrigger'))) {
+            // Evaluate and execute certificate conditions for the completed option.
+            certificate_conditions::evaluate_certificate_conditions(
+                $event,
+                $selecteduserid,
+                $optionid
+            );
+        }
         if (
             empty($bookingoption->booking->settings->sendmail)
             || !get_config('booking', 'uselegacymailtemplates')
@@ -577,6 +586,31 @@ class mod_booking_observer {
             checkanswers::ACTION_DELETE,
             $event->relateduserid
         );
+
+        // Sync group membership to booking enrolments.
+        $membershipadded = ($event->eventname === '\\core\\event\\group_member_added');
+        \mod_booking\local\sync\booking_enrolment::queue_source_membership_sync(
+            'group',
+            (int)$event->objectid,
+            (int)$event->relateduserid,
+            $membershipadded
+        );
+    }
+
+    /**
+     * React on cohort_member_added and cohort_member_removed events.
+     *
+     * @param base $event
+     * @return void
+     */
+    public static function cohort_membership_changed(base $event) {
+        $membershipadded = ($event->eventname === '\\core\\event\\cohort_member_added');
+        \mod_booking\local\sync\booking_enrolment::queue_source_membership_sync(
+            'cohort',
+            (int)$event->objectid,
+            (int)$event->relateduserid,
+            $membershipadded
+        );
     }
 
     /**
@@ -643,8 +677,12 @@ class mod_booking_observer {
         if (
             $data['other']['presencenew'] == get_config('booking', 'presencestatustoissuecertificate')
             && get_config('booking', 'certificateon')
+            && empty(get_config('booking', 'certificatemanualtrigger'))
         ) {
-            certificateclass::issue_certificate($data['objectid'], $data['relateduserid']);
+            $certificateid = booking_option::get_value_of_json_by_key((int)$data['objectid'], 'certificate') ?? 0;
+            if (!empty($certificateid)) {
+                certificateclass::issue_certificate($data['objectid'], $data['relateduserid'], 0, (int)$certificateid);
+            }
         }
     }
 

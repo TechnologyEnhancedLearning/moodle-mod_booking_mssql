@@ -25,7 +25,7 @@
 
 namespace mod_booking;
 
-use advanced_testcase;
+use mod_booking\booking_advanced_testcase;
 use local_entities_generator;
 use mod_booking\booking_rules\rules_info;
 use tool_mocktesttime\time_mock;
@@ -39,7 +39,7 @@ use mod_booking_generator;
  * @copyright 2025 Wunderbyte GmbH <info@wunderbyte.at>
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-final class rule_specifictime_test extends advanced_testcase {
+final class rule_specifictime_test extends booking_advanced_testcase {
     /**
      * String that is displayed in the mtask log when mail was send successfully.
      *
@@ -52,18 +52,7 @@ final class rule_specifictime_test extends advanced_testcase {
     public function setUp(): void {
         parent::setUp();
         $this->resetAfterTest();
-        time_mock::init();
         time_mock::set_mock_time(strtotime('now'));
-    }
-
-    /**
-     * Mandatory clean-up after each test.
-     */
-    public function tearDown(): void {
-        parent::tearDown();
-        /** @var mod_booking_generator $plugingenerator */
-        $plugingenerator = self::getDataGenerator()->get_plugin_generator('mod_booking');
-        $plugingenerator->teardown();
     }
 
     /**
@@ -364,6 +353,66 @@ final class rule_specifictime_test extends advanced_testcase {
                             'messages_sent' => 0, // Confirm no other messages on days before.
                         ],
                     ],
+                ],
+            ],
+            'Self-learning options are skipped for reminders based on coursestarttime' => [
+                [
+                    'rulessettings' => [
+                        0 => [
+                            'name' => 'Skip self-learning coursestarttime reminders',
+                            'useastemplate' => 0,
+                            'conditionname' => 'select_student_in_bo',
+                            'conditiondata' => '{"borole":"0"}',
+                            'actionname' => 'send_mail',
+                            'actiondata' => '{"sendical":0,"sendicalcreateorcancel":"",
+                                "subject":"A session {Title} starts soon",
+                                "template":"Hi {firstname}. The session of \\"{title}\\" starts soon:<br>{bookingdetails}",
+                                "templateformat":"1"}',
+                            'rulename' => 'rule_specifictime',
+                            'ruledata' => '{"seconds":604800,"datefield":"coursestarttime"}',
+                        ],
+                    ],
+                    'useoption' => 0,
+                    'usecourse' => 1,
+                    'optionsettings' => [
+                        [
+                            'selflearningcourse' => 1,
+                            'duration' => 84400 * 4,
+                        ],
+                    ],
+                ],
+                [
+                    'initialnumberoftasks' => 0,
+                ],
+            ],
+            'Self-learning options are skipped for reminders based on courseendtime' => [
+                [
+                    'rulessettings' => [
+                        0 => [
+                            'name' => 'Skip self-learning courseendtime reminders',
+                            'useastemplate' => 0,
+                            'conditionname' => 'select_student_in_bo',
+                            'conditiondata' => '{"borole":"0"}',
+                            'actionname' => 'send_mail',
+                            'actiondata' => '{"sendical":0,"sendicalcreateorcancel":"",
+                                "subject":"A session {Title} was 2 days ago",
+                                "template":"Hi {firstname}. The session of \\"{title}\\" was 2 days ago:<br>{bookingdetails}",
+                                "templateformat":"1"}',
+                            'rulename' => 'rule_specifictime',
+                            'ruledata' => '{"seconds":-172800,"datefield":"courseendtime"}',
+                        ],
+                    ],
+                    'useoption' => 0,
+                    'usecourse' => 1,
+                    'optionsettings' => [
+                        [
+                            'selflearningcourse' => 1,
+                            'duration' => 84400 * 4,
+                        ],
+                    ],
+                ],
+                [
+                    'initialnumberoftasks' => 0,
                 ],
             ],
             'Session reminders: Remind users before every session 1st in 2 days, 2nd and 3rd - in 10 minutes' => [

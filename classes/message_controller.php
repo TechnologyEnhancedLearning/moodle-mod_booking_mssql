@@ -131,6 +131,12 @@ class message_controller {
     /** @var bool $preventsendingmessage certain unresolved placeholders prevent the sending of messages.*/
     private $preventsendingmessage = false;
 
+    /** @var string $customattachment filesystem path to a custom attachment (temporary). */
+    private string $customattachment = '';
+
+    /** @var string $customattachmentname display filename for the custom attachment. */
+    private string $customattachmentname = '';
+
     /**
      * Constructor
      *
@@ -410,11 +416,14 @@ class message_controller {
 
         $messagedata = new message();
 
-        // If a valid booking manager was set, use booking manager as sender, else global $USER will be set.
-        if (!empty($this->bookingmanager)) {
+        // If a valid booking manager was set, use booking manager as sender.
+        // Fall back to $USER if available (non-cron context), or noreply user (e.g. in adhoc task / cron).
+        if (!empty($this->bookingmanager->id)) {
             $messagedata->userfrom = $this->bookingmanager;
-        } else {
+        } else if (!empty($USER->id)) {
             $messagedata->userfrom = $USER;
+        } else {
+            $messagedata->userfrom = \core_user::get_noreply_user();
         }
         $messagedata->userto = $this->user;
         $messagedata->modulename = 'booking';
@@ -448,11 +457,14 @@ class message_controller {
 
         $messagedata = new stdClass();
 
-        // If a valid booking manager was set, use booking manager as sender, else global $USER will be set.
-        if (!empty($this->bookingmanager)) {
+        // If a valid booking manager was set, use booking manager as sender.
+        // Fall back to $USER if available (non-cron context), or noreply user (e.g. in adhoc task / cron).
+        if (!empty($this->bookingmanager->id)) {
             $messagedata->userfrom = $this->bookingmanager;
-        } else {
+        } else if (!empty($USER->id)) {
             $messagedata->userfrom = $USER;
+        } else {
+            $messagedata->userfrom = \core_user::get_noreply_user();
         }
 
         $messagedata->modulename = 'booking';
@@ -606,7 +618,54 @@ class message_controller {
                         }
                     }
                 }
+                // If a custom attachment was provided via set_custom_attachment(), store it as a stored_file.
+                $customstoredfile = null;
+                if (!empty($this->customattachment) && file_exists($this->customattachment)) {
+                    try {
+                        $fs = get_file_storage();
+                        $context = context_system::instance();
+                        $itemid = $this->messagedata->userto->id ?? 0;
 
+                        // Remove any existing file to avoid duplicate key violations.
+                        $existing = $fs->get_file(
+                            $context->id,
+                            'mod_booking',
+                            'message_attachments',
+                            $itemid,
+                            '/',
+                            $this->customattachmentname
+                        );
+                        if ($existing) {
+                            $existing->delete();
+                        }
+
+                        $filerecord = [
+                            'contextid' => $context->id,
+                            'component' => 'mod_booking',
+                            'filearea'  => 'message_attachments',
+                            'itemid'    => $itemid,
+                            'filepath'  => '/',
+                            'filename'  => $this->customattachmentname,
+                            'userid'    => $this->messagedata->userto->id,
+                        ];
+                        $customstoredfile = $fs->create_file_from_pathname($filerecord, $this->customattachment);
+                        $this->messagedata->attachment = $customstoredfile;
+                        $this->messagedata->attachname = $this->customattachmentname;
+                    } catch (Throwable $e) {
+                        if (get_config('booking', 'bookingdebugmode')) {
+                            $event = booking_debug::create([
+                                'objectid' => $this->optionid,
+                                'context' => context_system::instance(),
+                                'relateduserid' => $this->messagedata->userto->id,
+                                'other' => [
+                                    'systemmessage' => 'Custom attachment could not be stored.',
+                                    'exceptionerrormessage' => $e->getMessage(),
+                                ],
+                            ]);
+                            $event->trigger();
+                        }
+                    }
+                }
                 // Check if checked: Use a non-native mailer instead of Moodle’s built-in one.
                 $nonnativemailer = get_config('booking', 'usenonnativemailer');
                 if (
@@ -637,12 +696,22 @@ class message_controller {
                             // Do nothing.
                         }
                     }
+                    if (!PHPUNIT_TEST && isset($customstoredfile)) {
+                        try {
+                            $customstoredfile->delete();
+                        // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch
+                        } catch (Throwable $e) {
+                            // Do nothing.
+                        }
+                    }
 
                     // Use an event to log that a message has been sent.
                     $event = \mod_booking\event\message_sent::create([
                         'context' => context_system::instance(),
-                        'userid' => $this->messagedata->userto->id,
-                        'relateduserid' => $this->messagedata->userfrom->id,
+                        // Userid is the user who triggered/sent the message (actor),
+                        // relateduserid is the user the message is sent to (receiver).
+                        'userid' => $this->messagedata->userfrom->id,
+                        'relateduserid' => $this->messagedata->userto->id,
                         'objectid' => $this->optionid ?? 0,
                         'other' => [
                             'messageparam' => $this->messageparam,
@@ -764,6 +833,20 @@ class message_controller {
     public function get_messagebody(): string {
 
         return $this->messagebody;
+    }
+
+    /**
+     * Set a custom attachment to be included in the email.
+     * The file at $filepath will be stored as a stored_file for sending and deleted afterwards.
+     * This establishes a generic base for attachment sending across all mail types (booking rules etc.).
+     *
+     * @param string $filepath absolute filesystem path to the attachment file
+     * @param string $filename display filename for the attachment
+     * @return void
+     */
+    public function set_custom_attachment(string $filepath, string $filename): void {
+        $this->customattachment = $filepath;
+        $this->customattachmentname = $filename;
     }
 
     /**

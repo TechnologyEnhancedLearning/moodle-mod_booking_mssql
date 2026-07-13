@@ -51,6 +51,7 @@ class rulesform extends dynamic_form {
         // If we open an existing rule, we need to save the id right away.
         if (!empty($ajaxformdata['id'])) {
             $mform->addElement('hidden', 'id', $ajaxformdata['id']);
+            $mform->setType('id', PARAM_INT); // Fix: setType für id, damit keine Debugging-Warnung in Moodle 4.5 erscheint.
             $this->prepare_ajaxformdata($ajaxformdata);
         } else if (!empty($ajaxformdata['btn_bookingruletemplates'])) {
             $this->prepare_ajaxformdata($ajaxformdata);
@@ -135,6 +136,12 @@ class rulesform extends dynamic_form {
                     );
                     $errors['rule_daysbefore_datefield'] =
                         get_string('error:deactivatelegacymailtemplates', 'mod_booking', $linktosetting);
+                } else if (
+                    $data['rule_daysbefore_datefield'] == 'installmentpayment'
+                    && ($data['bookingruleconditiontype'] ?? '') !== 'select_user_shopping_cart'
+                ) {
+                    $errors['rule_daysbefore_datefield'] =
+                        get_string('error:installmentdatefieldcondition', 'mod_booking');
                 }
                 break;
             case 'rule_specifictime':
@@ -151,6 +158,12 @@ class rulesform extends dynamic_form {
                     );
                     $errors['rulespecifictimedatefield'] =
                         get_string('error:deactivatelegacymailtemplates', 'mod_booking', $linktosetting);
+                } else if (
+                    $data['rulespecifictimedatefield'] == 'installmentpayment'
+                    && ($data['bookingruleconditiontype'] ?? '') !== 'select_user_shopping_cart'
+                ) {
+                    $errors['rulespecifictimedatefield'] =
+                        get_string('error:installmentdatefieldcondition', 'mod_booking');
                 }
                 break;
             case 'rule_react_on_event':

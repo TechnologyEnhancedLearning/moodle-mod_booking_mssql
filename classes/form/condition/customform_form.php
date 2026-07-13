@@ -68,6 +68,32 @@ class customform_form extends dynamic_form {
         require_capability('mod/booking:conditionforms', context_system::instance());
     }
 
+    /**
+     * Ensures the current user may act on the custom form data of the given user.
+     *
+     * The userid is supplied by the client and used to read/write the per-user customform cache
+     * (an application cache keyed only by userid + optionid). Acting on your own data is always
+     * allowed; acting on behalf of another user requires the mod/booking:bookforothers capability
+     * on the booking option's module context.
+     *
+     * @param int $userid the user whose custom form data is being accessed
+     * @param int $optionid the booking option id, used to resolve the module context
+     * @return void
+     */
+    public static function require_userid_access(int $userid, int $optionid): void {
+        global $USER;
+
+        if (empty($userid) || $userid === (int) $USER->id) {
+            return;
+        }
+
+        $settings = singleton_service::get_instance_of_booking_option_settings($optionid);
+        $context = !empty($settings->cmid)
+            ? context_module::instance($settings->cmid)
+            : context_system::instance();
+
+        require_capability('mod/booking:bookforothers', $context);
+    }
 
     /**
      * Set data for dynamic submission.
@@ -81,9 +107,11 @@ class customform_form extends dynamic_form {
 
         $formdata = $this->_ajaxformdata;
 
-        // Todo: get these values.
         $optionid = $formdata['id'];
         $userid = $formdata['userid'] ?? $USER->id;
+
+        // The userid is supplied by the client; reading another user's data requires bookforothers.
+        self::require_userid_access((int) $userid, (int) $optionid);
 
         $customformstore = new customformstore($userid, $optionid);
         $cachedata = $customformstore->get_customform_data();
@@ -109,6 +137,9 @@ class customform_form extends dynamic_form {
 
         $userid = $data->userid ?? $USER->id;
 
+        // The userid is supplied by the client; writing another user's data requires bookforothers.
+        self::require_userid_access((int) $userid, (int) $data->id);
+
         $customformstore = new customformstore($userid, $data->id);
         $customformstore->set_customform_data($data);
 
@@ -126,6 +157,9 @@ class customform_form extends dynamic_form {
 
         $id = $formdata['id'];
         $userid = $formdata['userid'];
+
+        // The userid is supplied by the client; building the form for another user requires bookforothers.
+        self::require_userid_access((int) $userid, (int) $id);
 
         // We have to pass by the option settings.
         $settings = singleton_service::get_instance_of_booking_option_settings((int)$id);
@@ -293,34 +327,63 @@ class customform_form extends dynamic_form {
                         );
                         $mform->setDefault('customform_enrolusersaction_' . $counter, $formelementvalue->value);
                         $mform->setType('customform_enrolusersaction_' . $counter, PARAM_TEXT);
-                        $mform->addElement(
-                            'advcheckbox',
-                            'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
-                            get_string('enroluserwhobookedtocourse', 'mod_booking'),
-                            get_string('applyuserwhobookedcheckbox', 'mod_booking')
-                        );
-                        $mform->setDefault(
-                            'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
-                            1
-                        );
-                        $mform->addElement(
-                            'static',
-                            'infoenroluserwhobookedstatic',
-                            '',
-                            get_string('enroluserwhobookedtocoursewarning', 'mod_booking')
-                        );
-                        $mform->hideIf(
-                            'infoenroluserwhobookedstatic',
-                            $identifier,
-                            'neq',
-                            '1'
-                        );
-                        $mform->hideIf(
-                            'infoenroluserwhobookedstatic',
-                            'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
-                            'neq',
-                            '1'
-                        );
+                        $enrolmode = (int) get_config('booking', 'enrolmultipleusersformmode');
+                        if ($enrolmode === MOD_BOOKING_ENROLMULTIPLEUSERS_CHECKBOX) {
+                            // Mode 0 (default): show checkbox so user can decide.
+                            $mform->addElement(
+                                'advcheckbox',
+                                'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
+                                get_string('enroluserwhobookedtocourse', 'mod_booking'),
+                                get_string('applyuserwhobookedcheckbox', 'mod_booking')
+                            );
+                            $mform->setDefault(
+                                'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
+                                1
+                            );
+                            $mform->addElement(
+                                'static',
+                                'infoenroluserwhobookedstatic',
+                                '',
+                                get_string('enroluserwhobookedtocoursewarning', 'mod_booking')
+                            );
+                            $mform->hideIf(
+                                'infoenroluserwhobookedstatic',
+                                $identifier,
+                                'neq',
+                                '1'
+                            );
+                            $mform->hideIf(
+                                'infoenroluserwhobookedstatic',
+                                'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
+                                'neq',
+                                '1'
+                            );
+                        } else if ($enrolmode === MOD_BOOKING_ENROLMULTIPLEUSERS_ALSOBOOKMYSELF) {
+                            // Mode 1: always book the booker — no checkbox, just an info hint.
+                            $mform->addElement(
+                                'static',
+                                'infoenrolalsobookmyselfstatic',
+                                '',
+                                get_string('enrolmultipleusersformmode:alsobookmyself:hint', 'mod_booking')
+                            );
+                        } else if ($enrolmode === MOD_BOOKING_ENROLMULTIPLEUSERS_DONOTBOOKMYSELF) {
+                            // Mode 2: never book the booker — hidden field with value 0 + info hint.
+                            $mform->addElement(
+                                'hidden',
+                                'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
+                                0
+                            );
+                            $mform->setType(
+                                'customform_enroluserwhobookedcheckbox_' . $formelementvalue->formtype . '_' . $counter,
+                                PARAM_INT
+                            );
+                            $mform->addElement(
+                                'static',
+                                'infoenroldonotbookmyselfstatic',
+                                '',
+                                get_string('enrolmultipleusersformmode:donotbookmyself:hint', 'mod_booking')
+                            );
+                        }
                 }
 
                 $counter++;

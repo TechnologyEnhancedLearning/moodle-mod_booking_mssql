@@ -28,6 +28,7 @@ namespace mod_booking\bo_availability\conditions;
 use context_system;
 use core_competency\user_competency;
 use mod_booking\bo_availability\bo_condition;
+use mod_booking\bo_availability\freezable_condition;
 use mod_booking\bo_availability\bo_info;
 use mod_booking\booking;
 use mod_booking\booking_option_settings;
@@ -52,7 +53,7 @@ require_once($CFG->dirroot . '/user/profile/lib.php');
  * @author Bernhard Fischer
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class hascompetency implements bo_condition {
+class hascompetency implements bo_condition, freezable_condition {
     /** @var int $id Id is set via json during construction but we still need a default ID */
     public $id = MOD_BOOKING_BO_COND_JSON_HASCOMPETENCY;
 
@@ -150,7 +151,7 @@ class hascompetency implements bo_condition {
      * @return bool
      */
     public function is_skippable(): bool {
-        return false;
+        return true;
     }
 
     /**
@@ -279,6 +280,30 @@ class hascompetency implements bo_condition {
      *
      * @param MoodleQuickForm $mform
      * @param int $optionid
+     * @return void
+     */
+    /**
+     * Returns the ordered list of form element names this condition adds to the option form.
+     * The first element is used as the warning insertion anchor.
+     *
+     * @return string[]
+     */
+    public function get_condition_form_elements(): array {
+        return [
+            'bo_cond_hascompetency_restrict',
+            'bo_cond_hascompetency_competencyids',
+            'bo_cond_hascompetency_competencyids_operator',
+            'bo_cond_hascompetency_overrideconditioncheckbox',
+            'bo_cond_hascompetency_overrideoperator',
+            'bo_cond_hascompetency_overridecondition',
+        ];
+    }
+
+    /**
+     * Add condition-specific form elements to the booking option form.
+     *
+     * @param MoodleQuickForm $mform Booking option form instance.
+     * @param int $optionid Booking option id.
      * @return void
      */
     public function add_condition_to_mform(MoodleQuickForm &$mform, int $optionid = 0) {
@@ -422,7 +447,10 @@ class hascompetency implements bo_condition {
             );
         }
 
-        $mform->addElement('html', '<hr class="w-50"/>');
+        $mform->addElement(
+            'html',
+            '<div id="bo_cond_hascompetency_restrict_hr" class="d-flex justify-content-end"><hr class="w-75"/></div>'
+        );
     }
 
     /**
@@ -519,7 +547,7 @@ class hascompetency implements bo_condition {
      * @param booking_option_settings $settings
      * @return string
      */
-    private function get_description_string(bool $isavailable, bool $full, booking_option_settings $settings): string {
+    public function get_description_string(bool $isavailable, bool $full, booking_option_settings $settings): string {
 
         if (
             !$isavailable

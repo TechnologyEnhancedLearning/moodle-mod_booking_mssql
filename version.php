@@ -18,19 +18,19 @@
  * Module Booking.
  *
  * @package mod_booking
- * @copyright 2025 Wunderbyte GmbH <info@wunderbyte.at>,
+ * @copyright 2026 Wunderbyte GmbH <info@wunderbyte.at>,
  * @author David Bogner, Georg Maißer, Bernhard Fischer, Magdalena Holczik, Andraž Prinčič
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2026033103;
+$plugin->version = 2026070301;
 $plugin->requires = 2024100700; // Requires this Moodle version. Current: Moodle 4.5.
-$plugin->release = '9.1.5';
+$plugin->release = '9.5.1';
 $plugin->maturity = MATURITY_STABLE;
 $plugin->component = 'mod_booking';
-$plugin->supported = [405, 501];
+$plugin->supported = [405, 502];
 $plugin->dependencies = [
-    'local_wunderbyte_table' => 2026022400,
+    'local_wunderbyte_table' => 2026061801,
 ];

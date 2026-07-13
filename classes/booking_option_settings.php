@@ -22,6 +22,7 @@ use context_user;
 use core_plugin_manager;
 use html_writer;
 use local_entities\entitiesrelation_handler;
+use local_wunderbyte_table\local\customfield\wbt_field_controller_info;
 use mod_booking\bo_availability\bo_subinfo;
 use mod_booking\bo_availability\conditions\subbooking;
 use mod_booking\booking_campaigns\campaigns_info;
@@ -106,6 +107,12 @@ class booking_option_settings {
 
     /** @var int $timemodified */
     public $timemodified = null;
+
+    /** @var int $usercreated ID of the user who created this booking option. */
+    public $usercreated = 0;
+
+    /** @var int $usermodified ID of the user who last modified this booking option. */
+    public $usermodified = 0;
 
     /** @var int $addtocalendar */
     public $addtocalendar = null;
@@ -212,6 +219,9 @@ class booking_option_settings {
     /** @var string $manageresponsesurl */
     public $manageresponsesurl = null;
 
+    /** @var string $bookingstrackerurl */
+    public $bookingstrackerurl = null;
+
     /** @var string $optiondatesteachersurl */
     public $optiondatesteachersurl = null;
 
@@ -239,7 +249,7 @@ class booking_option_settings {
     /** @var int $status like 1 for cancelled */
     public $status = null;
 
-    /** @var int $type booking option type (0 = default, 1 = selflearningcourse) */
+    /** @var int $type booking option type (0 = default, 1 = selflearningcourse, 2 = slotbooking) */
     public $type = null;
 
     /** @var string $imageurl url */
@@ -307,6 +317,9 @@ class booking_option_settings {
 
     /** @var array $subpluginssettings Collects Data that Subplugins need in the Settings singleton*/
     public $subpluginssettings = [];
+
+    /** @var ?stdClass $slotconfig Cached slot booking configuration for this option */
+    public $slotconfig = null;
 
     /**
      * Constructor for the booking option settings class.
@@ -429,6 +442,8 @@ class booking_option_settings {
             $this->limitanswers = $dbrecord->limitanswers;
             $this->timecreated = $dbrecord->timecreated;
             $this->timemodified = $dbrecord->timemodified;
+            $this->usercreated = $dbrecord->usercreated ?? 0;
+            $this->usermodified = $dbrecord->usermodified ?? 0;
             $this->addtocalendar = $dbrecord->addtocalendar;
             $this->calendarid = $dbrecord->calendarid;
             $this->pollurl = $dbrecord->pollurl;
@@ -552,6 +567,14 @@ class booking_option_settings {
                 $dbrecord->manageresponsesurl = $this->manageresponsesurl;
             } else {
                 $this->manageresponsesurl = $dbrecord->manageresponsesurl;
+            }
+
+            // If the key "bookingstrackerurl" is not yet set, we need to generate it.
+            if (!isset($dbrecord->bookingstrackerurl)) {
+                $this->generate_bookingstracker_url($optionid);
+                $dbrecord->bookingstrackerurl = $this->bookingstrackerurl;
+            } else {
+                $this->bookingstrackerurl = $dbrecord->bookingstrackerurl;
             }
 
             // If the key "optiondatesteachersurl" is not yet set, we need to generate it.
@@ -685,6 +708,21 @@ class booking_option_settings {
             } else {
                 $this->subpluginssettings = $dbrecord->subpluginssettings ?? [];
             }
+
+            // The customfieldsfortemplates values live in the language-agnostic bookingoptionsettings
+            // cache, so resolve their human-readable display values for the CURRENT language now,
+            // on every instantiation. This keeps customfields (e.g. select labels) in sync with the
+            // active language - just like dates - instead of "sticking" to the language that first
+            // populated the cache. Only the instance is updated; $dbrecord (cache) keeps its raw keys.
+            $this->localize_customfields_for_templates();
+
+            // If slot config is not present in cache object, load it once and cache it.
+            if (!isset($dbrecord->slotconfig)) {
+                $this->load_slot_config_from_db($optionid);
+                $dbrecord->slotconfig = $this->slotconfig;
+            } else {
+                $this->slotconfig = $dbrecord->slotconfig;
+            }
             return $dbrecord;
         }
 
@@ -755,6 +793,19 @@ class booking_option_settings {
                 $this->subpluginssettings[$plugin->name] = $class::load_data_for_settings_singleton($optionid);
             }
         }
+    }
+
+    /**
+     * Load slot booking config for this option from DB.
+     *
+     * @param int $optionid
+     * @return void
+     */
+    private function load_slot_config_from_db(int $optionid): void {
+        global $DB;
+
+        $record = $DB->get_record('booking_slot_config', ['optionid' => $optionid], '*', IGNORE_MISSING);
+        $this->slotconfig = $record ?: null;
     }
 
     /**
@@ -884,22 +935,27 @@ class booking_option_settings {
      * @param int $optionid
      */
     private function generate_manageresponses_url(int $optionid) {
-        global $CFG;
-
         if (!empty($this->cmid) && !empty($optionid)) {
             $manageresponsesmoodleurl = new moodle_url(
                 '/mod/booking/report.php',
                 ['id' => $this->cmid, 'optionid' => $optionid]
             );
+            $this->manageresponsesurl = html_entity_decode($manageresponsesmoodleurl->out(), ENT_QUOTES);
+        }
+    }
 
-            // Use html_entity_decode to convert "&amp;" to a simple "&" character.
-            if ($CFG->version >= 2023042400) {
-                // Moodle 4.2 needs second param.
-                $this->manageresponsesurl = html_entity_decode($manageresponsesmoodleurl->out(), ENT_QUOTES);
-            } else {
-                // Moodle 4.1 and older.
-                $this->manageresponsesurl = html_entity_decode($manageresponsesmoodleurl->out(), ENT_COMPAT);
-            }
+    /**
+     * Function to generate the bookingstracker URL (to report2.php) to track responses (answers) for an option.
+     *
+     * @param int $optionid
+     */
+    private function generate_bookingstracker_url(int $optionid) {
+        if (!empty($this->cmid) && !empty($optionid)) {
+            $bookingstrackermoodleurl = new moodle_url(
+                '/mod/booking/report2.php',
+                ['cmid' => $this->cmid, 'optionid' => $optionid]
+            );
+            $this->bookingstrackerurl = html_entity_decode($bookingstrackermoodleurl->out(), ENT_QUOTES);
         }
     }
 
@@ -1099,25 +1155,63 @@ class booking_option_settings {
             $fieldid = $field->get('id');
             $value = $data->get_value();
 
-            if (!empty($value)) {
-                $this->customfields[$shortname] = $value;
+            $this->customfields[$shortname] = $value;
 
-                if ($type === 'select') {
-                    $options = singleton_service::get_customfields_select_options($fieldid);
-                    $value = $options[$value];
-                }
+            // Use the corresponding field controller to get the real value of the custom field.
+            $fieldcontroller = wbt_field_controller_info::get_instance_by_shortname($shortname, 'mod_booking', 'booking');
+            $value = $fieldcontroller->get_option_value_by_key($value);
 
-                // We also return the customfieldsfortemplates where we get the real values of the selects.
-                $this->customfieldsfortemplates[$shortname] = [
-                    // Store the whole field object too so we can use it instead of DB calls.
-                    'field' => $field->to_record(),
-                    'fieldid' => $fieldid,
-                    'label' => $label,
-                    'key' => $shortname,
-                    'value' => $value,
-                    'type' => $type,
-                ];
+            // We also return the customfieldsfortemplates where we get the real values of the selects.
+            $this->customfieldsfortemplates[$shortname] = [
+                // Store the whole field object too so we can use it instead of DB calls.
+                'field' => $field->to_record(),
+                'fieldid' => $fieldid,
+                'label' => $label,
+                'key' => $shortname,
+                'value' => $value,
+                'type' => $type,
+            ];
+        }
+    }
+
+    /**
+     * Resolve the human-readable customfield display values for the current language.
+     *
+     * The customfieldsfortemplates 'value' entries are stored in the bookingoptionsettings cache,
+     * whose key is the optionid only (no language). A value formatted via format_string() at
+     * cache-build time would therefore "stick" to that language even after the user switches the
+     * site/session language. To avoid this we re-derive the display value from the raw,
+     * language-neutral key kept in $this->customfields on every instantiation, mirroring how dates
+     * are rendered with current_language().
+     *
+     * This re-runs the exact same field controller call as load_customfields(), so the result is
+     * identical apart from honouring the current language. Only the instance is mutated; the cached
+     * stdClass returned by set_values() keeps its raw keys, so direct cache readers and
+     * return_settings_as_stdclass() consumers are unaffected.
+     */
+    private function localize_customfields_for_templates(): void {
+        global $PAGE;
+
+        // Textarea customfields are re-derived below via format_text(), which runs the filter chain
+        // (multilang, emoticons, ...) and therefore initialises the page theme - and that needs a
+        // page context. Back-end callers (AJAX form submissions, scheduled tasks, events, CLI) may
+        // construct booking_option_settings before any context has been established, which makes
+        // format_text() throw "$PAGE->context was not set". Fall back to the system context so
+        // multilang/filters still run for those callers, but only when no context has been set yet:
+        // passing null to moodle_page::set_context() installs the system context only if the page
+        // has none, and is a silent no-op when a context already exists. Guarding on the URL instead
+        // would wrongly override an already-established context (e.g. a module context set via
+        // require_login() without a page URL, as happens in behat and web-service requests),
+        // triggering "unsupported modification of PAGE->context".
+        $PAGE->set_context(null);
+
+        foreach ($this->customfieldsfortemplates as $shortname => $unused) {
+            if (!array_key_exists($shortname, $this->customfields)) {
+                continue;
             }
+            $fieldcontroller = wbt_field_controller_info::get_instance_by_shortname($shortname, 'mod_booking', 'booking');
+            $this->customfieldsfortemplates[$shortname]['value'] =
+                $fieldcontroller->get_option_value_by_key($this->customfields[$shortname]);
         }
     }
 

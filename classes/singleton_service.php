@@ -480,7 +480,12 @@ class singleton_service {
      * @return stdClass
      */
     public static function get_instance_of_user(int $userid, bool $includeprofilefields = false) {
-        global $CFG;
+        global $CFG, $USER;
+
+        if (empty($userid)) {
+            return $USER ?? (object)[];
+        }
+
         $instance = self::get_instance();
 
         if (isset($instance->users[$userid])) {
@@ -757,41 +762,6 @@ class singleton_service {
 
         return $instance->entities[$id] ?: new stdClass();
     }
-    /**
-     * We store the options of the customfield.
-     *
-     * @param int $fieldid
-     *
-     * @return array
-     *
-     */
-    public static function get_customfields_select_options(int $fieldid): array {
-
-        global $DB;
-
-        $customfields = [];
-        $instance = self::get_instance();
-
-        if (!isset($instance->customfields[$fieldid])) {
-            $field = $DB->get_record('customfield_field', ['id' => $fieldid], 'configdata');
-            $configdata = json_decode($field->configdata, true);
-
-            $options = $configdata['options'];
-            $optionlist = explode("\n", $options);
-            $counter = 1;
-
-            foreach ($optionlist as $option) {
-                $option =
-
-                $customfields[$counter] = trim($option);
-                $counter++;
-            }
-
-            $instance->customfields[$fieldid] = $customfields;
-        }
-
-        return $instance->customfields[$fieldid];
-    }
 
     /**
      * Returns ascending index for userids.
@@ -859,12 +829,11 @@ class singleton_service {
     }
 
     /**
-     * [Description for get_customfield_field_by_shortname]
+     * Get a booking option custom field by its shortname.
      *
      * @param string $field
      *
      * @return object
-     *
      */
     public static function get_customfield_field_by_shortname(string $field) {
         $instance = self::get_instance();
@@ -872,7 +841,14 @@ class singleton_service {
         if (!isset($instance->customfieldbyshortname[$field])) {
             global $DB;
 
-            $record = $DB->get_record('customfield_field', ['shortname' => $field]);
+            $sql = "SELECT cf.*
+                    FROM {customfield_field} cf
+                    JOIN {customfield_category} cc ON cf.categoryid = cc.id
+                    WHERE cf.shortname = :shortname
+                    AND cc.component = 'mod_booking'
+                    AND cc.area = 'booking'";
+
+            $record = $DB->get_record_sql($sql, ['shortname' => $field]);
 
             $instance->customfieldbyshortname[$field] = $record;
         }
@@ -895,14 +871,16 @@ class singleton_service {
      *
      * @param int $optionid
      * @param int $userid
+     * @param int $conditionid
      *
      * @return void
      *
      */
-    public static function set_temp_values_for_certificates(int $optionid, int $userid) {
+    public static function set_temp_values_for_certificates(int $optionid, int $userid, int $conditionid) {
         $instance = self::get_instance();
         $instance->tempdataforcertificate[] = $userid;
         $instance->tempdataforcertificate[] = $optionid;
+        $instance->tempdataforcertificate[] = $conditionid;
     }
 
     /**
@@ -924,7 +902,7 @@ class singleton_service {
      */
     public static function unset_temp_values_for_certificates() {
         $instance = self::get_instance();
-        unset($instance->kswuserid, $instance->kswoptionid);
+        unset($instance->tempdataforcertificate);
     }
 
     /**

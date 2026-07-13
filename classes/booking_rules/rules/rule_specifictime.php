@@ -262,22 +262,8 @@ class rule_specifictime implements booking_rule {
             return;
         }
 
-        // Self-learning courses use coursestarttime only for sorting.
-        // So if a rule is dependent on date(s) of the option, we just skip the execution.
-        if (!empty($settings->selflearningcourse)) {
-            if (
-                !empty($jsonobject->ruledata->datefield)
-                && in_array(
-                    $jsonobject->ruledata->datefield,
-                    [
-                        'coursestarttime',
-                        'courseendtime',
-                        'optiondatestarttime',
-                    ]
-                )
-            ) {
-                return;
-            }
+        if ($this->should_skip_for_selflearningcourse($settings, $jsonobject)) {
+            return;
         }
 
         // We reuse this code when we check for validity, therefore we use a separate function.
@@ -324,6 +310,12 @@ class rule_specifictime implements booking_rule {
             return false;
         }
 
+        $settings = singleton_service::get_instance_of_booking_option_settings($optionid);
+        $jsonobject = json_decode($this->rulejson);
+        if ($this->should_skip_for_selflearningcourse($settings, $jsonobject)) {
+            return false;
+        }
+
         // We retrieve the same sql we also use in the execute function.
         $records = $this->get_records_for_execution($optionid, $userid, true);
 
@@ -356,9 +348,42 @@ class rule_specifictime implements booking_rule {
                 // If we found a matching optiondateid but times don't match,
                 // set to false - maybe rules has changed.
                 $rulestillapplies = false;
+            } else {
+                // If there are no optiondates involved, we just compare the runtimes.
+                if (isset($record->seconds)) {
+                    $this->seconds = (int)$record->seconds;
+                }
+                $oldnextruntime = (int) $record->datefield - (int) $this->seconds;
+                if ($oldnextruntime == $nextruntime) {
+                    $rulestillapplies = true;
+                    break;
+                }
+
+                $rulestillapplies = false;
             }
         }
         return $rulestillapplies;
+    }
+
+    /**
+     * Self-learning courses use some date fields only for sorting and not for reminders.
+     *
+     * @param object $settings
+     * @param stdClass $jsonobject
+     * @return bool
+     */
+    private function should_skip_for_selflearningcourse(object $settings, stdClass $jsonobject): bool {
+        return !empty($settings->selflearningcourse)
+            && !empty($jsonobject->ruledata->datefield)
+            && in_array(
+                $jsonobject->ruledata->datefield,
+                [
+                    'coursestarttime',
+                    'courseendtime',
+                    'optiondatestarttime',
+                ],
+                true
+            );
     }
 
     /**
@@ -391,8 +416,15 @@ class rule_specifictime implements booking_rule {
         $anduserid = "";
 
         // In case it's a deprecated rule with a "days" field, we convert it to seconds.
+        $numberofseconds = 0;
+        if (isset($ruledata->seconds) && is_number($ruledata->seconds)) {
+            $numberofseconds = (int)$ruledata->seconds;
+        } else if (isset($ruledata->days) && is_number($ruledata->days)) {
+            $numberofseconds = (int)$ruledata->days * DAYSECS;
+        }
+
         $params = [
-            'numberofseconds' => ((int) $ruledata->seconds) ?? 0,
+            'numberofseconds' => $numberofseconds,
             'nowparam' => time(),
         ];
 

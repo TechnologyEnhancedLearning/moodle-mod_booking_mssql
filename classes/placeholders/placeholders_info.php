@@ -83,8 +83,15 @@ class placeholders_info {
 
         global $USER;
 
+        if (str_contains($text, '%7B')) {
+            // In case the '{}' characters have been URL encoded, we need to decode them again.
+            $encodedbrackets  = ['%7B', '%7D'];
+            $decodedbrackets = ['{', '}'];
+            $text = str_replace($encodedbrackets, $decodedbrackets, $text);
+        }
+
         // First, identify all the placeholders.
-        preg_match_all('/{(.*?)}/', $text, $matches);
+        preg_match_all('/{(?!mlang\b)(?!mlang\s)(.*?)}/', $text, $matches);
         $placeholders = $matches[1];
 
         if (empty($userid)) {
@@ -99,7 +106,7 @@ class placeholders_info {
 
         $namespaces[] = 'mod_booking\placeholders\placeholders\\';
         foreach (core_plugin_manager::instance()->get_plugins_of_type('bookingextension') as $plugin) {
-                $namespaces[] = "bookingextension_{$plugin->name}\\placeholders\\";
+            $namespaces[] = "bookingextension_{$plugin->name}\\placeholders\\";
         }
 
         foreach ($placeholders as $placeholder) {
@@ -167,7 +174,8 @@ class placeholders_info {
                     $text,
                     $placeholders,
                     $placeholder,
-                    $fieldexists
+                    $fieldexists,
+                    $rulejson ?? ''
                 );
             }
 

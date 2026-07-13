@@ -15,41 +15,32 @@
     along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 }}
 {{!
-    @template mod_booking/optiondates_only
+    @template mod_booking/form_booking_instances_selector_suggestion
+
+    Moodle template for a booking instance suggestion in an autocomplete form element.
 
     Classes required for JS:
     * none
 
     Data attributes required for JS:
-    * data-region
+    * none
+
+    Context variables required for this template:
+    * id int booking instance id
+    * text string name of the booking instance
+    * coursename string name of the course
+    * visibility string visibility of the booking instance
 
     Example context (json):
     {
-        "showsessions" : true,
-        "onesession" : false,
-        "sessions" : [
-            {
-                "key" : [
-                    {
-                        "startdatetime" : "3 March 2023, 10:30 AM",
-                        "enddatetime" : "3 March 2023, 11:45 AM"
-                    }
-                ]
-            }
-        ]
+        "id": 1,
+        "text": "My Booking Instance",
+        "coursename": "Course 101",
+        "visibility": "Visible"
     }
 }}
-{{#showsessions}}
-{{#onesession}}
-{{#dates}}
-<b>{{{startdatetime}}} - {{{enddatetime}}}</b>
-{{/dates}}
-{{/onesession}}
-{{^onesession}}
-<ul>
-{{#dates}}
-    <li>{{{startdatetime}}} - {{{enddatetime}}}</li>
-{{/dates}}
-</ul>
-{{/onesession}}
-{{/showsessions}}
+<span>
+    <span class="booking-instance-suggestion font-weight-bold">{{text}}<small> ID: {{id}}</small></span>
+    <span class="d-block"><small>{{coursename}}</small></span>
+    <span class="d-block"><small>{{visibility}}</small></span>
+</span>

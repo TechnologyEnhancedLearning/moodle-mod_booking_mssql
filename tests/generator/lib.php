@@ -24,10 +24,13 @@
  */
 
 use core\lock\lock;
+use local_shopping_cart\local\vatnrchecker;
+use mod_booking\bo_availability\conditions\booking_time;
 use mod_booking\booking;
 use mod_booking\booking_rules\booking_rules;
 use mod_booking\booking_rules\rules_info;
 use mod_booking\output\view;
+use mod_booking\price;
 use mod_booking\table\bookingoptions_wbtable;
 use mod_booking\booking_option;
 use mod_booking\booking_campaigns\campaigns_info;
@@ -50,6 +53,11 @@ use mod_booking\bo_availability\conditions\previouslybooked;
 use mod_booking\bo_availability\conditions\selectusers;
 use mod_booking\bo_availability\conditions\userprofilefield_1_default;
 use mod_booking\bo_availability\conditions\userprofilefield_2_custom;
+use mod_booking\customfield\booking_handler;
+use mod_booking\local\certificate_conditions\certificate_conditions;
+use mod_booking\local\competencies\competencies_handler;
+use mod_booking\local\slotbooking\slot_availability;
+use mod_booking\local\slotbooking\slot_rules;
 use mod_booking\settings\optionformconfig\optionformconfig_info;
 use mod_booking\enrollink;
 use tool_mocktesttime\time_mock;
@@ -82,6 +90,9 @@ class mod_booking_generator extends testing_module_generator {
     public function reset() {
         $this->bookingoptions = 0;
 
+        // Keep test runs symmetric: clear backing caches and static acceleration
+        // when the generator is reset, not only during teardown.
+        cache_helper::purge_all();
         parent::reset();
     }
 
@@ -100,6 +111,7 @@ class mod_booking_generator extends testing_module_generator {
         optionformconfig_info::destroy_singletons();
         Mod_bookingPrice::destroy_singletons();
         rules_info::destroy_singletons();
+        bo_info::destroy_singletons();
         allowedtobookininstance::reset_instance();
         customform::reset_instance();
         enrolledincohorts::reset_instance();
@@ -113,6 +125,15 @@ class mod_booking_generator extends testing_module_generator {
         userprofilefield_1_default::reset_instance();
         userprofilefield_2_custom::reset_instance();
         booking_rules::$rules = [];
+        price::destroy_singletons();
+        // Slotbooking static caches.
+        slot_availability::reset_caches();
+        slot_rules::reset_caches();
+        // Other static caches.
+        booking_handler::reset_caches();
+        competencies_handler::reset_caches();
+        certificate_conditions::reset_caches();
+        booking_time::destroy_instances();
         // Shopping cart.
         cartstore::reset();
         // Time mock.
@@ -342,6 +363,65 @@ class mod_booking_generator extends testing_module_generator {
             $DB->set_field('booking_options', 'timemadevisible', $record->timemadevisible, ['id' => $record->id]);
             singleton_service::destroy_booking_option_singleton($record->id);
         }
+
+        return $record;
+    }
+
+    /**
+     * Function to create a booking option template.
+     *
+     * Templates are booking options with bookingid = 0. Unlike create_option(),
+     * this method does not require 'text' (defaults to '') and requires 'templatename' instead.
+     * The templatename is stored in the JSON field via the addastemplate field logic.
+     *
+     * @param ?array|stdClass $record Must contain 'bookingid' (for cmid/context) and 'templatename'.
+     * @return stdClass the booking option template object
+     */
+    public function create_template($record = null) {
+
+        $record = (array) $record;
+
+        if (!isset($record['bookingid'])) {
+            throw new coding_exception(
+                'bookingid must be present in mod_booking_generator::create_template() $record'
+            );
+        }
+
+        if (!isset($record['templatename'])) {
+            throw new coding_exception(
+                'templatename must be present in mod_booking_generator::create_template() $record'
+            );
+        }
+
+        // Default text to empty string for templates.
+        if (!isset($record['text'])) {
+            $record['text'] = '';
+        }
+
+        // Set addastemplate flag so that addastemplate::prepare_save_field() sets bookingid=0
+        // and stores templatename in the JSON field.
+        $record['addastemplate'] = 1;
+
+        $booking = singleton_service::get_instance_of_booking_by_bookingid($record['bookingid']);
+
+        $this->bookingoptions++;
+
+        $record = (object) $record;
+
+        $record->id = $record->id ?? 0;
+        $record->optionid = $record->optionid ?? 0;
+        $record->cmid = $booking->cmid;
+        $record->identifier = $record->identifier ?? booking_option::create_truly_unique_option_identifier();
+
+        $context = context_module::instance($record->cmid);
+
+        $record->addtocalendar = 0;
+        $record->maxanswers = !empty($record->maxanswers) ? $record->maxanswers : 0;
+        $record->teachersforoption = [];
+        $record->responsiblecontact = [];
+
+        // Create / save booking option template.
+        $record->id = booking_option::update($record, $context);
 
         return $record;
     }
@@ -719,7 +799,14 @@ class mod_booking_generator extends testing_module_generator {
     private function get_customfield_id(string $identifier): int {
         global $DB;
 
-        if (!$id = $DB->get_field('customfield_field', 'id', ['shortname' => $identifier])) {
+        $sql = "SELECT cf.id
+                  FROM {customfield_field} cf
+                  JOIN {customfield_category} cc ON cf.categoryid = cc.id
+                 WHERE cf.shortname = :shortname
+                   AND cc.component = 'mod_booking'
+                   AND cc.area = 'booking'";
+
+        if (!$id = $DB->get_field_sql($sql, ['shortname' => $identifier])) {
             throw new Exception('The specified booking customfield with shortname "' . $identifier . '" does not exist');
         }
         return $id;

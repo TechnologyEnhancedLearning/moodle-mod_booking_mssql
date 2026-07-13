@@ -55,11 +55,11 @@ class booking_handler extends \core_customfield\handler {
     protected $parentcontext;
 
     /** @var int Field is visible to everybody */
-    const MOD_BOOKING_VISIBLETOALL = 2;
+    public const MOD_BOOKING_VISIBLETOALL = 2;
     /** @var int Field is only for teachers */
-    const MOD_BOOKING_VISIBLETOTEACHERS = 1;
+    public const MOD_BOOKING_VISIBLETOTEACHERS = 1;
     /** @var int Field is not displayed  */
-    const MOD_BOOKING_NOTVISIBLE = 0;
+    public const MOD_BOOKING_NOTVISIBLE = 0;
 
     /**
      * Returns a singleton
@@ -78,8 +78,11 @@ class booking_handler extends \core_customfield\handler {
      * Run reset code after unit tests to reset the singleton usage.
      */
     public static function reset_caches(): void {
-        if (!(defined('PHPUNIT_TEST') && PHPUNIT_TEST)) {
-            throw new \coding_exception('This feature is only intended for use in unit tests');
+        $isphpunittest = defined('PHPUNIT_TEST') && PHPUNIT_TEST;
+        $isbehattest = defined('BEHAT_SITE_RUNNING') && BEHAT_SITE_RUNNING;
+
+        if (!$isphpunittest && !$isbehattest) {
+            throw new \coding_exception('This feature is only intended for use in automated tests');
         }
 
         static::$singleton = null;
@@ -115,6 +118,7 @@ class booking_handler extends \core_customfield\handler {
                     LEFT JOIN {customfield_category} cfc
                     ON cff.categoryid = cfc.id
                     WHERE cfc.component = 'mod_booking'
+                    AND cfc.area = 'booking'
                     ORDER BY cfc.sortorder, cff.sortorder";
             $params = [];
         } else {
@@ -124,6 +128,7 @@ class booking_handler extends \core_customfield\handler {
                     LEFT JOIN {customfield_category} cfc
                     ON cff.categoryid = cfc.id
                     WHERE cfc.component = 'mod_booking'
+                    AND cfc.area = 'booking'
                     AND cff.shortname $insql
                     ORDER BY cfc.sortorder, cff.sortorder";
         }
@@ -398,9 +403,27 @@ class booking_handler extends \core_customfield\handler {
      */
     public function instance_form_validation(array $data, array $files = []) {
 
-        $errors = parent::instance_form_validation($data, $files);
+        // We must not validate custom fields that are not shown in the form
+        // (e.g. unchecked in optionformconfig for a reduced form).
+        // The parent method validates ALL editable fields, which causes errors
+        // for fields not present in the submitted data.
+        $contextid = 0;
+        if (!empty($data['cmid'])) {
+            $contextid = \context_module::instance($data['cmid'])->id;
+        }
+        $uncheckedcustomfields = optionformconfig_info::get_unchecked_customfields($contextid);
 
-        // Currently nothing to validate.
+        $instanceid = empty($data['id']) ? 0 : $data['id'];
+        $editablefields = $this->get_editable_fields($instanceid);
+        $fields = api::get_instance_fields_data($editablefields, $instanceid);
+        $errors = [];
+        foreach ($fields as $formfield) {
+            $shortname = $formfield->get_field()->get('shortname');
+            if (in_array($shortname, $uncheckedcustomfields)) {
+                continue;
+            }
+            $errors += $formfield->instance_form_validation($data, $files);
+        }
 
         return $errors;
     }
@@ -497,7 +520,8 @@ class booking_handler extends \core_customfield\handler {
                         FROM {customfield_field} cf
                         JOIN {customfield_category} cc
                           ON cc.id = cf.categoryid
-                       WHERE cc.component = 'mod_booking'"
+                       WHERE cc.component = 'mod_booking'
+                         AND cc.area = 'booking'"
         );
         $forbiddenshortnames = array_intersect($boproperties, $usedshortnames);
         if (empty($forbiddenshortnames)) {
