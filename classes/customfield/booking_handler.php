@@ -510,9 +510,12 @@ class booking_handler extends \core_customfield\handler {
     public function check_for_forbidden_shortnames_and_return_warning(): string {
         global $DB, $OUTPUT;
         // Just the first optionid we find.
+        /*
         $anyoptionid = $DB->get_field_sql(
             "SELECT id FROM {booking_options}"
         );
+        */
+        $anyoptionid = $DB->get_field('booking_options', 'id', []);
         $settings = singleton_service::get_instance_of_booking_option_settings($anyoptionid);
         $boproperties = $settings->get_booking_option_properties();
         $usedshortnames = $DB->get_fieldset_sql(
