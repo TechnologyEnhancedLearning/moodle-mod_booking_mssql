@@ -323,6 +323,18 @@ class ical {
     protected function add_vevent($uid, $dtstart, $dtend, $time = false) {
         global $CFG, $DB, $PAGE;
 
+        // Get the URL of the Booking activity. LH MODIFICATION
+        $bookingurl = '';
+        
+        if (!empty($this->booking->id)) {
+            $cm = get_coursemodule_from_instance('booking', $this->booking->id, 0);
+            if ($cm) {
+                $bookingurl = (new \moodle_url('/mod/booking/view.php', [
+                'id' => $cm->id
+                ]))->out(false);
+            }
+        }
+
         $eventid = false;
         if ($time) {
             // If it's an option date (a session), use the option date's eventid.
@@ -355,6 +367,11 @@ class ical {
 
         $fulldescription = rtrim(strip_tags(preg_replace("/<br>|<\/p>/", "\n", $fulldescription)));
         $fulldescription = str_replace("\n", "\\n", $fulldescription);
+
+        // Add a link back to the Booking activity. LH MODIFICATION
+        if (!empty($bookingurl)) {
+            $fulldescription .= "\\n\\nTo manage your booking or join your session, go to: " . $bookingurl;  
+        }
 
         // Remove CR and CRLF from description as the description must be on one line to work with ical.
         $fulldescription = str_replace(["\r\n", "\n", "\r"], ' ', $fulldescription);
@@ -395,6 +412,11 @@ class ical {
             "{$attendee}",
             "UID:{$uid}",
         ];
+
+        // LH MODIFICATION
+        if (!empty($bookingurl)) {
+            $veventparts[] = $this->fold_line("URL:" . $bookingurl);
+        }
 
         if (!empty($this->location)) {
             $veventparts[] = "LOCATION:{$this->location}";
